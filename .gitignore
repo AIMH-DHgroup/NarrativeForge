@@ -1,0 +1,6 @@
+# Ignore text, Word, and CSV files
+*.txt
+*.docx
+*.csv
+
+.venv/
