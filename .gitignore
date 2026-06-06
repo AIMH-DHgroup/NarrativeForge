@@ -2,5 +2,8 @@
 *.txt
 *.docx
 *.csv
+*.png
+*.xlsx
+visual_report.md
 
 .venv/

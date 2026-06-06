@@ -22,6 +22,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--chunk-words", type=int, default=350)
     p.add_argument("--chunk-overlap", type=int, default=80)
     p.add_argument("--top-k", type=int, default=8)
+    p.add_argument("--csv-id-column", default="Card ID")
+    p.add_argument("--csv-title-column", default="Descriptor of the value chain")
+    p.add_argument("--csv-text-columns", nargs="+", default=None)
+    p.add_argument("--csv-all-columns", action="store_true", default=True)
+    p.add_argument("--csv-max-rows", type=int, default=0)
+    p.add_argument("--prompt-kind", choices=["auto", "cultural-heritage", "value-chain"], default="auto")
     p.add_argument("--runs", type=int, default=3)
     p.add_argument("--output-dir", default="outputs")
     p.add_argument("--temperature", type=float, default=0.1)
@@ -57,6 +63,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--chunk-words", type=int, default=350)
     p.add_argument("--chunk-overlap", type=int, default=80)
     p.add_argument("--top-k", type=int, default=8)
+    p.add_argument("--csv-id-column", default="Card ID")
+    p.add_argument("--csv-title-column", default="Descriptor of the value chain")
+    p.add_argument("--csv-text-columns", nargs="+", default=None)
+    p.add_argument("--csv-all-columns", action="store_true", default=True)
+    p.add_argument("--csv-max-rows", type=int, default=0)
+    p.add_argument("--prompt-kind", choices=["auto", "cultural-heritage", "value-chain"], default="auto")
     p.add_argument("--runs", type=int, default=3)
     p.add_argument("--output-dir", default="outputs")
     p.add_argument("--outdir", default="benchmark_results")
@@ -89,6 +101,12 @@ def main(argv: list[str] | None = None) -> int:
             chunk_words=args.chunk_words,
             chunk_overlap=args.chunk_overlap,
             top_k=args.top_k,
+            csv_id_column=args.csv_id_column,
+            csv_title_column=args.csv_title_column,
+            csv_text_columns=args.csv_text_columns,
+            csv_all_columns=args.csv_all_columns,
+            csv_max_rows=args.csv_max_rows,
+            prompt_kind=args.prompt_kind,
         )
         return 0
     if args.command == "evaluate":
@@ -124,6 +142,12 @@ def main(argv: list[str] | None = None) -> int:
             chunk_words=args.chunk_words,
             chunk_overlap=args.chunk_overlap,
             top_k=args.top_k,
+            csv_id_column=args.csv_id_column,
+            csv_title_column=args.csv_title_column,
+            csv_text_columns=args.csv_text_columns,
+            csv_all_columns=args.csv_all_columns,
+            csv_max_rows=args.csv_max_rows,
+            prompt_kind=args.prompt_kind,
         )
         evaluate_folder(sources_dir=input_path if input_path.is_dir() else input_path.parent, outputs_dir=Path(args.output_dir), outdir=Path(args.outdir), excel=args.excel)
         return 0

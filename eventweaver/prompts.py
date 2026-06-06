@@ -34,3 +34,46 @@ Output only the final narrative.
 CASE-STUDY FORM:
 {case_study_text}
 """
+
+
+VALUE_CHAIN_PROMPT_TEMPLATE = """You are a careful narrative editor for mountain value-chain case studies.
+
+Your task is to transform the CSV value-chain record provided by the user into a short plain-text narrative.
+
+Use only the information contained in the CSV record. Do not invent names, dates, places, institutions, products, actors, challenges, innovations, landscape features, or interpretations that are not present in the source record. If information is missing, omit it rather than guessing.
+
+Write a coherent narrative of about 300-500 words. The narrative must be divided into short paragraphs. Each paragraph must express one clear narrative unit, such as the territorial context, the value chain, the local assets, the challenges, the innovation, the relevance for the MOVING project, or the mountain landscape.
+
+For this task, treat a paragraph as equivalent to a narrative event. Each paragraph must be syntactically complete and must contain complete sentences. Do not split sentences between paragraphs. Do not end a paragraph with an incomplete sentence.
+
+The narrative should normally include, when available in the source record:
+the value-chain descriptor;
+the member state, region, district, or mountain landscape;
+the product, service, activity, or value chain described;
+the land-use system;
+the local assets;
+the key challenges;
+the type of value chain;
+the type of innovation;
+the brief description of the innovation;
+the reasons why the value chain is relevant;
+the synthetic description of the value chain;
+the protected areas or mountain reference landscape, if available;
+important socioeconomic or territorial context, if available and useful.
+
+Do not use bullet points, numbered lists, tables, headings, metadata labels, JSON, Markdown, citations, or academic references. Do not mention that you are following a prompt. Do not include phrases such as "the CSV record says" or "according to the dataset."
+
+Write in an informative, neutral, research-oriented style. Avoid promotional language, emotional exaggeration, and fictional storytelling.
+
+Output only the final narrative.
+
+CSV VALUE-CHAIN RECORD:
+{source_text}
+"""
+
+
+def prompt_template_for(prompt_kind: str) -> str:
+    kind = (prompt_kind or "auto").strip().lower()
+    if kind == "value-chain":
+        return VALUE_CHAIN_PROMPT_TEMPLATE
+    return GENERAL_PROMPT_TEMPLATE

@@ -2,21 +2,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .docx_reader import read_docx_text
 from .ollama_client import generate_ollama
-from .prompts import GENERAL_PROMPT_TEMPLATE
+from .prompts import prompt_template_for
 from .source_preparation import prepare_source_context
-from .utils import write_csv
-from .utils import case_id_from_path, iter_input_docs, safe_model_name
+from .source_record import SourceRecord, build_output_filename, iter_source_records, source_text_word_count
+from .text_metrics import split_paragraphs
+from .utils import read_csv, write_csv
 
 
 def _save_run_manifest(output_dir: Path, records: list[dict]) -> None:
-    manifest = output_dir / "generation_runs.csv"
+    manifest = output_dir / "generation_metadata.csv"
     fieldnames = [
+        "source_type",
         "source",
+        "row_index",
+        "row_id",
+        "row_title",
         "output",
         "method",
         "run",
+        "prompt_kind",
+        "resolved_prompt_kind",
         "input_strategy",
         "resolved_input_strategy",
         "original_source_word_count",
@@ -26,10 +32,19 @@ def _save_run_manifest(output_dir: Path, records: list[dict]) -> None:
         "chunk_words",
         "chunk_overlap",
         "top_k",
+        "source_word_count",
+        "output_word_count",
+        "paragraph_count",
         "runtime_seconds",
         "error",
     ]
-    write_csv(manifest, records, fieldnames=fieldnames)
+    existing: list[dict] = []
+    if manifest.exists():
+        existing = read_csv(manifest)
+    combined = [row for row in existing if str(row.get("output", "")) not in {str(r.get("output", "")) for r in records if r.get("output")}]
+    combined.extend(records)
+    write_csv(manifest, combined, fieldnames=fieldnames)
+    write_csv(output_dir / "generation_runs.csv", combined, fieldnames=fieldnames)
 
 
 def generate_narratives(
@@ -39,22 +54,45 @@ def generate_narratives(
     output_dir: Path,
     temperature: float,
     num_ctx: int,
-    input_strategy: str = "brief",
+    input_strategy: str = "auto",
     max_source_words: int = 3500,
     chunk_words: int = 350,
     chunk_overlap: int = 80,
     top_k: int = 8,
+    csv_id_column: str = "Card ID",
+    csv_title_column: str = "Descriptor of the value chain",
+    csv_text_columns: list[str] | None = None,
+    csv_all_columns: bool = True,
+    csv_max_rows: int = 0,
+    prompt_kind: str = "auto",
 ) -> list[dict]:
     output_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
-    for source in iter_input_docs(input_path):
-        source_text = read_docx_text(source)
-        if not source_text.strip():
+    if csv_text_columns:
+        csv_all_columns = False
+    source_records = iter_source_records(
+        input_path,
+        csv_id_column=csv_id_column,
+        csv_title_column=csv_title_column,
+        csv_text_columns=csv_text_columns,
+        csv_all_columns=csv_all_columns,
+        csv_max_rows=csv_max_rows,
+        prompt_kind=prompt_kind,
+    )
+
+    for source in source_records:
+        if not source.source_text.strip():
             records.append({
-                "source": str(source),
+                "source_type": source.source_type,
+                "source": str(source.source_path),
+                "row_index": source.row_index or "",
+                "row_id": source.row_id,
+                "row_title": source.row_title,
                 "output": "",
                 "method": "",
                 "run": "",
+                "prompt_kind": prompt_kind,
+                "resolved_prompt_kind": source.prompt_kind,
                 "input_strategy": input_strategy,
                 "resolved_input_strategy": "",
                 "original_source_word_count": 0,
@@ -64,38 +102,59 @@ def generate_narratives(
                 "chunk_words": chunk_words,
                 "chunk_overlap": chunk_overlap,
                 "top_k": top_k,
+                "source_word_count": 0,
+                "output_word_count": 0,
+                "paragraph_count": 0,
                 "runtime_seconds": "",
                 "error": "empty source",
             })
             continue
-        case_id = case_id_from_path(source)
-        prepared = prepare_source_context(source_text, input_strategy, max_source_words, chunk_words, chunk_overlap, top_k)
-        prompt = GENERAL_PROMPT_TEMPLATE.format(case_study_text=prepared.text)
+        prompt_text = source.source_text
+        prepared_source = source.source_text
+        prepared_word_count = source_text_word_count(source)
+        resolved_input_strategy = input_strategy
+        if source.source_type == "docx":
+            prepared = prepare_source_context(source.source_text, input_strategy, max_source_words, chunk_words, chunk_overlap, top_k)
+            prompt_text = prepared.text
+            prepared_source = prepared.text
+            prepared_word_count = prepared.prepared_source_word_count
+            resolved_input_strategy = prepared.strategy_used
+
+        prompt = prompt_template_for(source.prompt_kind).format(source_text=prompt_text, case_study_text=prompt_text)
         for model in models:
-            method = safe_model_name(model)
             for run in range(1, runs + 1):
                 result = generate_ollama(prompt, model, temperature=temperature, num_ctx=num_ctx)
-                out = output_dir / f"{case_id}_narrative_{method}_{prepared.strategy_used}_run{run}.txt"
+                out = output_dir / build_output_filename(source, model, run)
                 out.write_text(result.text, encoding="utf-8")
+                output_word_count = source_text_word_count(SourceRecord(source.source_type, out, result.text, source.prompt_kind))
                 records.append({
-                    "source": str(source),
+                    "source_type": source.source_type,
+                    "source": str(source.source_path),
+                    "row_index": source.row_index or "",
+                    "row_id": source.row_id,
+                    "row_title": source.row_title,
                     "output": str(out),
                     "method": model,
                     "run": str(run),
-                    "input_strategy": input_strategy,
-                    "resolved_input_strategy": prepared.strategy_used,
-                    "original_source_word_count": prepared.original_source_word_count,
-                    "prepared_source_word_count": prepared.prepared_source_word_count,
-                    "selected_chunk_count": prepared.selected_chunk_count,
+                    "prompt_kind": prompt_kind,
+                    "resolved_prompt_kind": source.prompt_kind,
+                    "input_strategy": input_strategy if source.source_type == "docx" else "full",
+                    "resolved_input_strategy": resolved_input_strategy,
+                    "original_source_word_count": source_text_word_count(source),
+                    "prepared_source_word_count": prepared_word_count,
+                    "selected_chunk_count": 0 if source.source_type == "csv" else prepared.selected_chunk_count,
                     "max_source_words": max_source_words,
                     "chunk_words": chunk_words,
                     "chunk_overlap": chunk_overlap,
                     "top_k": top_k,
+                    "source_word_count": source_text_word_count(source),
+                    "output_word_count": output_word_count,
+                    "paragraph_count": len(split_paragraphs(result.text)),
                     "runtime_seconds": f"{result.runtime_seconds:.3f}",
                     "error": result.error or "",
                 })
                 if result.error:
-                    print(f"Generation failed for {source.name} with {model} run {run}: {result.error}")
+                    print(f"Generation failed for {source.source_path.name} with {model} run {run}: {result.error}")
                 else:
                     print(f"Saved {out}")
     _save_run_manifest(output_dir, records)

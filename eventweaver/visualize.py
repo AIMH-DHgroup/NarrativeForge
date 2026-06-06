@@ -236,24 +236,26 @@ def visualize_results(runs_csv: Path, outdir: Path, consider_runtime: bool = Fal
     summarize_runs_csv(runs_csv, outdir)
     case_rows = compute_case_method_summary(rows)
     model_rows = compute_model_overall_summary(case_rows)
+    docx_model_rows = [row for row in model_rows if str(row.get("source_type", "docx")).lower() != "csv"]
+    docx_rows = [row for row in rows if str(row.get("source_type", "docx")).lower() != "csv"]
 
     write_csv(tables_dir / "nrs_runs_table.csv", rows)
     write_csv(tables_dir / "nrs_case_method_summary_table.csv", case_rows)
     write_csv(tables_dir / "nrs_model_overall_summary_table.csv", model_rows)
 
     chart_paths = [
-        _plot_mean_nrs(model_rows, charts_dir / "mean_nrs_by_method.png"),
-        _plot_fcr(model_rows, charts_dir / "mean_bertscore_semantic_r_by_method.png"),
-        _plot_failed_rate(model_rows, charts_dir / "failed_rate_by_method.png"),
-        _plot_word_vs_nrs(rows, charts_dir / "nrs_no_r_vs_word_count.png"),
+        _plot_mean_nrs(docx_model_rows, charts_dir / "mean_nrs_by_method.png"),
+        _plot_fcr(docx_model_rows, charts_dir / "mean_bertscore_semantic_r_by_method.png"),
+        _plot_failed_rate(docx_model_rows, charts_dir / "failed_rate_by_method.png"),
+        _plot_word_vs_nrs(docx_rows, charts_dir / "nrs_no_r_vs_word_count.png"),
     ]
 
     report = viz_dir / "visual_report.md"
     report.write_text(
         "\n\n".join([
             "# EventWeaver Visual Report",
-            _markdown_table(model_rows, ["method", "cases_count", "total_runs", "mean_NRS", "std_NRS", "mean_runtime_seconds", "mean_word_count", "mean_paragraph_count", "failed_rate", "mean_bertscore_f1", "mean_semantic_similarity", "mean_R", "rank"], "Model Overall Summary"),
-            _markdown_table(case_rows, ["case_id", "method", "number_of_runs", "mean_runtime_seconds", "mean_word_count", "mean_paragraph_count", "total_broken_sentences", "total_forbidden_formatting", "failed_runs", "mean_bertscore_f1", "mean_semantic_similarity", "robustness_available", "R_stab", "R_struct", "R_fail", "R", "NRS", "NRS_no_R"], "Case-Method Summary"),
+            _markdown_table(model_rows, ["source_type", "method", "cases_count", "total_runs", "mean_NRS", "mean_CSV_NRS", "mean_Q", "std_NRS", "mean_runtime_seconds", "mean_word_count", "mean_paragraph_count", "failed_rate", "mean_bertscore_f1", "mean_semantic_similarity", "mean_R", "rank"], "Model Overall Summary"),
+            _markdown_table(case_rows, ["source_type", "case_id", "source_file", "row_index", "row_id", "row_title", "method", "number_of_runs", "mean_runtime_seconds", "mean_word_count", "mean_paragraph_count", "total_broken_sentences", "total_forbidden_formatting", "failed_runs", "mean_bertscore_f1", "mean_semantic_similarity", "robustness_available", "R_stab", "R_struct", "R_fail", "R", "mean_Q", "mean_field_coverage", "mean_format_score", "CSV_NRS", "NRS", "NRS_no_R"], "Case-Method Summary"),
             "## Charts",
             *[f"- `{path.relative_to(viz_dir)}`" for path in chart_paths],
         ]),
