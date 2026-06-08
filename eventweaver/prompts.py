@@ -40,9 +40,15 @@ VALUE_CHAIN_PROMPT_TEMPLATE = """You are a careful narrative editor for mountain
 
 Your task is to transform the CSV value-chain record provided by the user into a short plain-text narrative.
 
-Use only the information contained in the CSV record. Do not invent names, dates, places, institutions, products, actors, challenges, innovations, landscape features, or interpretations that are not present in the source record. If information is missing, omit it rather than guessing.
+Use only the information contained in the CSV record. Do not invent names, dates, places, institutions, products, actors, challenges, innovations, landscape features, numeric values, percentages, statistics, or interpretations that are not present in the source record. If information is missing, omit it rather than guessing.
 
-Write a coherent narrative of about 300-500 words. The narrative must be divided into short paragraphs. Each paragraph must express one clear narrative unit, such as the territorial context, the value chain, the local assets, the challenges, the innovation, the relevance for the MOVING project, or the mountain landscape.
+The CSV record may contain numeric values, percentages, indicators, counts, areas, population values, economic values, environmental values, or other quantitative information. When numeric data are present in the selected numeric columns, you must preserve the original values and include them in the narrative. Do not round, approximate, normalize, convert, or recalculate numeric values unless an aggregated value is already provided in the CSV record.
+
+If several selected numeric columns describe the same territory, value chain, landscape, socioeconomic context, land-use system, protected area, or environmental condition, aggregate them narratively. This means that you should combine the relevant quantitative indicators into one or more readable sentences that explain the context of the value chain. Preserve every numeric value or percentage that you use in the aggregation.
+
+For example, if the source record contains population, area, elevation, protected-area share, employment, agricultural surface, or other socioeconomic or territorial indicators, describe them together as contextual evidence. Do not list numbers mechanically. Explain how the selected indicators characterize the territory or value chain, while remaining strictly faithful to the record.
+
+Write a coherent narrative of about 300-500 words. The narrative must be divided into short paragraphs. Each paragraph must express one clear narrative unit, such as the territorial context, the value chain, the local assets, the challenges, the innovation, the relevance for the MOVING project, the mountain landscape, or the quantitative socioeconomic and territorial context.
 
 For this task, treat a paragraph as equivalent to a narrative event. Each paragraph must be syntactically complete and must contain complete sentences. Do not split sentences between paragraphs. Do not end a paragraph with an incomplete sentence.
 
@@ -59,7 +65,17 @@ the brief description of the innovation;
 the reasons why the value chain is relevant;
 the synthetic description of the value chain;
 the protected areas or mountain reference landscape, if available;
-important socioeconomic or territorial context, if available and useful.
+important socioeconomic, territorial, demographic, economic, agricultural, environmental, or land-use indicators, if available;
+any numeric values or percentages from selected numeric columns that are relevant to the narrative.
+
+When using quantitative information:
+preserve the exact numeric values and percentages as written in the source record;
+keep the original units when they are provided;
+do not invent units;
+do not infer trends unless the source record explicitly supports them;
+do not compare values unless the comparison is directly supported by the record;
+do not calculate new totals, averages, rates, percentages, or rankings unless they are already present in the source record;
+do not omit numeric values that are important for understanding the selected indicators.
 
 Do not use bullet points, numbered lists, tables, headings, metadata labels, JSON, Markdown, citations, or academic references. Do not mention that you are following a prompt. Do not include phrases such as "the CSV record says" or "according to the dataset."
 
