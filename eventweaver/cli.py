@@ -6,7 +6,11 @@ from pathlib import Path
 from .benchmark import evaluate_folder, summarize_runs_csv, write_manifest_template
 from .generation import generate_narratives
 from .models import MODEL_PRESETS, resolve_models
+from .prompts import CSV_PROMPT_STRATEGIES, DOCX_PROMPT_STRATEGIES
 from .visualize import visualize_results
+
+
+PROMPT_STRATEGY_CHOICES = sorted(set(DOCX_PROMPT_STRATEGIES + CSV_PROMPT_STRATEGIES))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,10 +32,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--csv-all-columns", action="store_true", default=True)
     p.add_argument("--csv-max-rows", type=int, default=0)
     p.add_argument("--prompt-kind", choices=["auto", "cultural-heritage", "value-chain"], default="auto")
+    p.add_argument("--prompt-strategy", choices=PROMPT_STRATEGY_CHOICES, default="standard")
+    p.add_argument("--prompt-strategies", nargs="+", default=None)
     p.add_argument("--runs", type=int, default=3)
     p.add_argument("--output-dir", default="outputs")
     p.add_argument("--temperature", type=float, default=0.1)
-    p.add_argument("--num-ctx", type=int, default=8192)
+    p.add_argument("--num-ctx", type=int, default=None)
 
     p = sub.add_parser("evaluate", help="Compute NRS benchmark reports")
     p.add_argument("--sources-dir", default=None)
@@ -69,11 +75,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--csv-all-columns", action="store_true", default=True)
     p.add_argument("--csv-max-rows", type=int, default=0)
     p.add_argument("--prompt-kind", choices=["auto", "cultural-heritage", "value-chain"], default="auto")
+    p.add_argument("--prompt-strategy", choices=PROMPT_STRATEGY_CHOICES, default="standard")
+    p.add_argument("--prompt-strategies", nargs="+", default=None)
     p.add_argument("--runs", type=int, default=3)
     p.add_argument("--output-dir", default="outputs")
     p.add_argument("--outdir", default="benchmark_results")
     p.add_argument("--temperature", type=float, default=0.1)
-    p.add_argument("--num-ctx", type=int, default=8192)
+    p.add_argument("--num-ctx", type=int, default=None)
     p.add_argument("--excel", action="store_true")
 
     return parser
@@ -107,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
             csv_all_columns=args.csv_all_columns,
             csv_max_rows=args.csv_max_rows,
             prompt_kind=args.prompt_kind,
+            prompt_strategy=args.prompt_strategy,
+            prompt_strategies=args.prompt_strategies,
         )
         return 0
     if args.command == "evaluate":
@@ -148,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
             csv_all_columns=args.csv_all_columns,
             csv_max_rows=args.csv_max_rows,
             prompt_kind=args.prompt_kind,
+            prompt_strategy=args.prompt_strategy,
+            prompt_strategies=args.prompt_strategies,
         )
         evaluate_folder(sources_dir=input_path if input_path.is_dir() else input_path.parent, outputs_dir=Path(args.output_dir), outdir=Path(args.outdir), excel=args.excel)
         return 0

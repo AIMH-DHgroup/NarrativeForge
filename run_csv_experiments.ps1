@@ -6,7 +6,7 @@
 # - Print the benchmark metrics in the PowerShell terminal
 #
 # Run from the NarrativeForge project root:
-# .\run_csv_all_models_experiment.ps1
+# .\run_csv_experiments.ps1
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 

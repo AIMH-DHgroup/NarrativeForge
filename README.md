@@ -59,6 +59,7 @@ The project is designed for research workflows that need grounded narrative gene
 | `benchmark_csv/` | Benchmark outputs for CSV runs |
 | `run_all_preset_experiments.ps1` | PowerShell launcher for preset-based experiments |
 | `run_csv_experiments.ps1` | PowerShell launcher for CSV experiments |
+| `run_prompt_strategy_experiments.ps1` | PowerShell launcher for prompt-strategy experiments |
 
 ## Installation
 
@@ -143,6 +144,7 @@ python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
 - Text is extracted from paragraphs and tables.
 - Long documents can be handled through `auto`, `brief`, `full`, or `rag`.
 - The cultural-heritage prompt is used for `.docx` sources.
+- Prompt strategies such as `standard`, `short`, `detailed`, `strict`, `event_focused`, `faithfulness_first`, and `digital_heritage_focused` can be benchmarked with `--prompt-strategies`.
 
 ### `.csv`
 
@@ -152,6 +154,7 @@ python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
 - CSV outputs include the row index, row ID, title slug, model name, and run number in filenames.
 - CSV is useful for tabular case-study datasets such as value-chain records.
 - The value-chain prompt is used for `.csv` sources.
+- Prompt strategies such as `standard`, `numeric_aware`, `field_coverage`, `concise`, `territorial_context`, and `innovation_focused` can be benchmarked with `--prompt-strategies`.
 
 ## Generating Narratives from `.docx`
 
@@ -186,6 +189,42 @@ python -m eventweaver generate data\MOVING_VCs_DATASET_FINAL_V2.csv `
   --runs 1 `
   --prompt-kind value-chain `
   --csv-max-rows 5
+```
+
+## Prompt-Engineering Experiments
+
+NarrativeForge can treat prompt strategy as an experimental dimension, so you can compare how different prompt formulations affect quality, robustness, runtime, word count, paragraph structure, and failure rate.
+
+Prompt strategies must match the prompt kind. Use cultural-heritage strategies with `.docx` inputs and value-chain strategies with `.csv` inputs.
+
+### DOCX prompt-strategy experiment
+
+```powershell
+python -m eventweaver all case_studies `
+  --models qwen3:8b gemma3:12b `
+  --runs 3 `
+  --input-strategy auto `
+  --prompt-kind cultural-heritage `
+  --prompt-strategies standard short detailed strict event_focused faithfulness_first digital_heritage_focused `
+  --output-dir outputs_docx_prompt_exp `
+  --outdir benchmark_docx_prompt_exp `
+  --excel
+```
+
+### CSV prompt-strategy experiment
+
+```powershell
+python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
+  --models qwen3:8b gemma3:12b `
+  --runs 3 `
+  --prompt-kind value-chain `
+  --prompt-strategies standard numeric_aware field_coverage concise territorial_context innovation_focused `
+  --csv-id-column "Card ID" `
+  --csv-title-column "Descriptor of the value chain" `
+  --csv-all-columns `
+  --output-dir outputs_csv_prompt_exp `
+  --outdir benchmark_csv_prompt_exp `
+  --excel
 ```
 
 ## Long-Document Strategies
@@ -259,23 +298,33 @@ Custom model names still work through `--models`, even if they are not listed in
 
 Preferred NRS:
 
-`NRS = 100 * (0.35 * mean_bertscore_f1 + 0.35 * mean_semantic_similarity + 0.30 * R)`
+```math
+NRS = 100 \cdot (0.35 \cdot mean_bertscore_f1 + 0.35 \cdot mean_semantic_similarity + 0.30 \cdot R)
+```
 
 Fallback if BERTScore is unavailable:
 
-`NRS = 100 * (0.70 * mean_semantic_similarity + 0.30 * R)`
+```math
+NRS = 100 \cdot (0.70 \cdot mean_semantic_similarity + 0.30 \cdot R)
+```
 
 For a single output:
 
-`NRS_no_R = 100 * (0.50 * bertscore_f1 + 0.50 * semantic_similarity)`
+```math
+NRS_no_R = 100 \cdot (0.50 \cdot bertscore_f1 + 0.50 \cdot semantic_similarity)
+```
 
 Fallback for a single output if BERTScore is unavailable:
 
-`NRS_no_R = 100 * semantic_similarity`
+```math
+NRS_no_R = 100 \cdot semantic_similarity
+```
 
 Robustness:
 
-`R = 0.50 * R_stab + 0.25 * R_struct + 0.25 * R_fail`
+```math
+R = 0.50 \cdot R_stab + 0.25 \cdot R_struct + 0.25 \cdot R_fail
+```
 
 - `R_stab`: stability of semantic quality across repeated runs.
 - `R_struct`: stability of paragraph/event structure across repeated runs.
@@ -287,15 +336,21 @@ CSV row evaluation is implemented and exposed in the benchmark outputs as `CSV_N
 
 Per-row quality score:
 
-`Q = 0.30 * bertscore_f1 + 0.25 * semantic_similarity + 0.30 * field_coverage + 0.15 * format_score`
+```math
+Q = 0.30 \cdot bertscore_f1 + 0.25 \cdot semantic_similarity + 0.30 \cdot field_coverage + 0.15 \cdot format_score
+```
 
 Fallback without BERTScore:
 
-`Q = 0.45 * semantic_similarity + 0.35 * field_coverage + 0.20 * format_score`
+```math
+Q = 0.45 \cdot semantic_similarity + 0.35 \cdot field_coverage + 0.20 \cdot format_score
+```
 
 Repeated-run CSV score:
 
-`CSV_NRS = 100 * (0.70 * mean_Q + 0.30 * R)`
+```math
+CSV_NRS = 100 \cdot (0.70 \cdot mean_Q + 0.30 \cdot R)
+```
 
 The CSV benchmark uses the same robustness term `R` as the `.docx` benchmark.
 
@@ -375,6 +430,7 @@ The repository includes convenience launchers for Windows PowerShell:
 ```powershell
 .\run_all_preset_experiments.ps1
 .\run_csv_experiments.ps1
+.\run_prompt_strategy_experiments.ps1
 ```
 
 Warning: all-model experiments can take a very long time. The number of generations is approximately:

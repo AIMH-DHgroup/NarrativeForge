@@ -145,18 +145,18 @@ def source_text_word_count(record: SourceRecord) -> int:
     return word_count(record.source_text)
 
 
-def build_output_filename(record: SourceRecord, model: str, run: int) -> str:
+def build_output_filename(record: SourceRecord, model: str, run: int, *, prompt_strategy: str, input_strategy: str | None = None) -> str:
     model_slug = safe_model_name(model)
+    strategy_slug = safe_model_name(prompt_strategy)
     if record.source_type == "csv":
         parts = [safe_model_name(record.source_path.stem)]
         if record.row_index is not None:
             parts.append(f"row{record.row_index:03d}")
         if record.row_id:
             parts.append(safe_model_name(record.row_id))
-        if record.row_title:
-            parts.append(safe_model_name(record.row_title))
-        parts.extend(["narrative", model_slug, f"run{run}"])
+        parts.extend([model_slug, strategy_slug, f"run{run}"])
         return "_".join(part for part in parts if part) + ".txt"
 
     case_id = case_id_from_path(record.source_path)
-    return f"{case_id}_narrative_{model_slug}_run{run}.txt"
+    input_slug = safe_model_name(input_strategy or "auto")
+    return f"{case_id}_narrative_{model_slug}_{input_slug}_{strategy_slug}_run{run}.txt"

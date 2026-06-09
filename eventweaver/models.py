@@ -106,6 +106,85 @@ ALL_MODELS: list[str] = [
 ]
 
 
+OLLAMA_MODEL_METADATA: dict[str, dict[str, int | str]] = {
+    "llama3.2:1b": {"dimension": 2048, "arch": "llama", "parameters": "1.24B", "quantization": "Q8_0", "context_length": 128000},
+    "llama3.2:3b": {"dimension": 3072, "arch": "llama", "parameters": "3.21B", "quantization": "Q4_K_M", "context_length": 128000},
+    "llama3.1:8b": {"dimension": 4096, "arch": "llama", "parameters": "8.03B", "quantization": "Q4_K_M", "context_length": 128000},
+
+    "qwen2.5:7b": {"dimension": 3584, "arch": "qwen2", "parameters": "7.62B", "quantization": "Q4_K_M", "context_length": 32000},
+    "qwen2.5:14b": {"dimension": 5120, "arch": "qwen2", "parameters": "14.8B", "quantization": "Q4_K_M", "context_length": 32000},
+    "qwen2.5:32b": {"dimension": 5120, "arch": "qwen2", "parameters": "32.8B", "quantization": "Q4_K_M", "context_length": 32000},
+
+    "qwen3:0.6b": {"dimension": 1024, "arch": "qwen3", "parameters": "752M", "quantization": "Q4_K_M", "context_length": 40000},
+    "qwen3:1.7b": {"dimension": 2048, "arch": "qwen3", "parameters": "2.03B", "quantization": "Q4_K_M", "context_length": 40000},
+    "qwen3:4b": {"dimension": 2560, "arch": "qwen3", "parameters": "4.02B", "quantization": "Q4_K_M", "context_length": 256000},
+    "qwen3:8b": {"dimension": 4096, "arch": "qwen3", "parameters": "8.19B", "quantization": "Q4_K_M", "context_length": 40000},
+    "qwen3:14b": {"dimension": 5120, "arch": "qwen3", "parameters": "14.8B", "quantization": "Q4_K_M", "context_length": 40000},
+    "qwen3:30b": {"dimension": 2048, "arch": "qwen3moe", "parameters": "30.5B", "quantization": "Q4_K_M", "context_length": 256000},
+    "qwen3:32b": {"dimension": 5120, "arch": "qwen3", "parameters": "32.8B", "quantization": "Q4_K_M", "context_length": 40000},
+
+    "qwen3.5:0.8b": {"dimension": 1024, "arch": "qwen35", "parameters": "873M", "quantization": "Q8_0", "context_length": 256000},
+    "qwen3.5:2b": {"dimension": 2048, "arch": "qwen35", "parameters": "2.27B", "quantization": "Q8_0", "context_length": 256000},
+    "qwen3.5:4b": {"dimension": 2560, "arch": "qwen35", "parameters": "4.66B", "quantization": "Q4_K_M", "context_length": 256000},
+    "qwen3.5:9b": {"dimension": 4096, "arch": "qwen35", "parameters": "9.65B", "quantization": "Q4_K_M", "context_length": 256000},
+    "qwen3.5:27b": {"dimension": 5120, "arch": "qwen35", "parameters": "27.8B", "quantization": "Q4_K_M", "context_length": 256000},
+    "qwen3.5:35b": {"dimension": 2048, "arch": "qwen35moe", "parameters": "36B", "quantization": "Q4_K_M", "context_length": 256000},
+
+    "gemma3:1b": {"dimension": 1152, "arch": "gemma3", "parameters": "999M", "quantization": "Q4_K_M", "context_length": 32000},
+    "gemma3:4b": {"dimension": 2560, "arch": "gemma3", "parameters": "4.3B", "quantization": "Q4_K_M", "context_length": 128000},
+    "gemma3:12b": {"dimension": 3840, "arch": "gemma3", "parameters": "12.2B", "quantization": "Q4_K_M", "context_length": 128000},
+    "gemma3:27b": {"dimension": 4608, "arch": "gemma3", "parameters": "27.4B", "quantization": "Q4_K_M", "context_length": 128000},
+    "gemma2:2b": {"dimension": 2304, "arch": "gemma2", "parameters": "2.61B", "quantization": "Q4_0", "context_length": 8000},
+    "gemma2:9b": {"dimension": 3584, "arch": "gemma2", "parameters": "9.24B", "quantization": "Q4_0", "context_length": 8000},
+    "gemma2:27b": {"dimension": 4608, "arch": "gemma2", "parameters": "27.2B", "quantization": "Q4_0", "context_length": 8000},
+
+    "gemma4:e2b": {"dimension": 2048, "arch": "gemma4", "parameters": "5.12B", "quantization": "Q4_K_M", "context_length": 128000},
+    "gemma4:e4b": {"dimension": 2560, "arch": "gemma4", "parameters": "8B", "quantization": "Q4_K_M", "context_length": 128000},
+    "gemma4:12b": {"dimension": 3840, "arch": "gemma4", "parameters": "12.2B", "quantization": "Q4_K_M", "context_length": 256000},
+    "gemma4:26b": {"dimension": 3840, "arch": "gemma4", "parameters": "25.8B", "quantization": "Q4_K_M", "context_length": 256000},
+    "gemma4:31b": {"dimension": 4608, "arch": "gemma4", "parameters": "31.3B", "quantization": "Q4_K_M", "context_length": 256000},
+
+    "mistral:7b": {"dimension": 4096, "arch": "llama", "parameters": "7.25B", "quantization": "Q4_K_M", "context_length": 32000},
+    "mistral-nemo:12b": {"dimension": 5120, "arch": "llama", "parameters": "12.2B", "quantization": "Q4_0", "context_length": 1000000},
+    "mistral-small:24b": {"dimension": 5120, "arch": "llama", "parameters": "23.6B", "quantization": "Q4_K_M", "context_length": 32000},
+    "mistral-small3.2:24b": {"dimension": 5120, "arch": "mistral3", "parameters": "24B", "quantization": "Q4_K_M", "context_length": 128000},
+
+    "phi3.5:3.8b": {"dimension": 3072, "arch": "phi3", "parameters": "3.82B", "quantization": "Q4_0", "context_length": 128000},
+    "phi4-mini:3.8b": {"dimension": 3072, "arch": "phi3", "parameters": "3.84B", "quantization": "Q4_K_M", "context_length": 128000},
+    "phi4:14b": {"dimension": 5120, "arch": "phi3", "parameters": "14.7B", "quantization": "Q4_K_M", "context_length": 16000},
+
+    "deepseek-v2:16b": {"dimension": 2048, "arch": "deepseek2", "parameters": "15.7B", "quantization": "Q4_0", "context_length": 160000},
+    "deepseek-r1:7b": {"dimension": 3584, "arch": "qwen2", "parameters": "7.62B", "quantization": "Q4_K_M", "context_length": 128000},
+    "deepseek-r1:14b": {"dimension": 5120, "arch": "qwen2", "parameters": "14.8B", "quantization": "Q4_K_M", "context_length": 128000},
+    "deepseek-r1:32b": {"dimension": 5120, "arch": "qwen2", "parameters": "32.8B", "quantization": "Q4_K_M", "context_length": 128000},
+
+    "granite3.3:2b": {"dimension": 2048, "arch": "granite", "parameters": "2.53B", "quantization": "Q4_K_M", "context_length": 128000},
+    "granite3.3:8b": {"dimension": 4096, "arch": "granite", "parameters": "8.17B", "quantization": "Q4_K_M", "context_length": 128000},
+
+    "cogito:3b": {"dimension": 3072, "arch": "llama", "parameters": "3.61B", "quantization": "Q4_K_M", "context_length": 128000},
+    "cogito:8b": {"dimension": 4096, "arch": "llama", "parameters": "8.03B", "quantization": "Q4_K_M", "context_length": 128000},
+    "cogito:14b": {"dimension": 5120, "arch": "qwen2", "parameters": "14.8B", "quantization": "Q4_K_M", "context_length": 128000},
+    "cogito:32b": {"dimension": 5120, "arch": "qwen2", "parameters": "32.8B", "quantization": "Q4_K_M", "context_length": 128000},
+}
+
+REQUIRED_METADATA_KEYS = {"dimension", "arch", "parameters", "quantization", "context_length"}
+
+
+def get_model_metadata(model: str) -> dict[str, int | str]:
+    try:
+        return OLLAMA_MODEL_METADATA[model]
+    except KeyError as exc:
+        raise KeyError(f"Missing Ollama metadata for model: {model}") from exc
+
+
+def resolve_num_ctx_for_model(model: str, input_strategy: str, explicit_num_ctx: int | None = None) -> int:
+    if explicit_num_ctx is not None:
+        return explicit_num_ctx
+    if (input_strategy or "").strip().lower() == "full":
+        return int(get_model_metadata(model)["context_length"])
+    return 8192
+
+
 # ---------------------------------------------------------------------
 # Optional exclusion list
 # ---------------------------------------------------------------------
@@ -282,3 +361,20 @@ def resolve_models(models: list[str] | None = None, preset: str | None = None) -
             return selected.copy()
 
     return DEFAULT_MODELS.copy()
+
+
+missing_metadata = sorted(set(ALL_MODELS) - set(OLLAMA_MODEL_METADATA))
+if missing_metadata:
+    raise RuntimeError(f"Missing Ollama metadata for models: {missing_metadata}")
+
+invalid_metadata_keys = sorted(
+    model
+    for model, metadata in OLLAMA_MODEL_METADATA.items()
+    if set(metadata) != REQUIRED_METADATA_KEYS
+)
+if invalid_metadata_keys:
+    raise RuntimeError(f"Invalid Ollama metadata keys for models: {invalid_metadata_keys}")
+
+missing_metadata = sorted(set(ALL_MODELS) - set(OLLAMA_MODEL_METADATA))
+if missing_metadata:
+    raise RuntimeError(f"Missing Ollama metadata for models: {missing_metadata}")
