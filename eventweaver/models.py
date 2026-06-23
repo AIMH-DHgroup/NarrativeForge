@@ -145,7 +145,7 @@ OLLAMA_MODEL_METADATA: dict[str, dict[str, int | str]] = {
     "gemma4:31b": {"dimension": 4608, "arch": "gemma4", "parameters": "31.3B", "quantization": "Q4_K_M", "context_length": 256000},
 
     "mistral:7b": {"dimension": 4096, "arch": "llama", "parameters": "7.25B", "quantization": "Q4_K_M", "context_length": 32000},
-    "mistral-nemo:12b": {"dimension": 5120, "arch": "llama", "parameters": "12.2B", "quantization": "Q4_0", "context_length": 1000000},
+    "mistral-nemo:12b": {"dimension": 5120, "arch": "llama", "parameters": "12.2B", "quantization": "Q4_0", "context_length": 128000},
     "mistral-small:24b": {"dimension": 5120, "arch": "llama", "parameters": "23.6B", "quantization": "Q4_K_M", "context_length": 32000},
     "mistral-small3.2:24b": {"dimension": 5120, "arch": "mistral3", "parameters": "24B", "quantization": "Q4_K_M", "context_length": 128000},
 

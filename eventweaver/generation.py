@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .ollama_client import generate_ollama
+from .ollama_client import generate_ollama, list_ollama_models, resolve_ollama_host
 from .prompts import prompt_template_for, validate_prompt_strategy
 from .models import resolve_num_ctx_for_model
 from .source_preparation import prepare_source_context
@@ -29,6 +29,8 @@ def _save_run_manifest(output_dir: Path, records: list[dict]) -> None:
         "prompt_strategy",
         "input_strategy",
         "resolved_input_strategy",
+        "ollama_host",
+        "num_ctx",
         "original_source_word_count",
         "prepared_source_word_count",
         "selected_chunk_count",
@@ -71,9 +73,14 @@ def generate_narratives(
     prompt_kind: str = "auto",
     prompt_strategy: str = "standard",
     prompt_strategies: list[str] | None = None,
+    ollama_host: str | None = None,
+    ollama_timeout: int = 900,
+    ollama_retries: int = 1,
+    skip_ollama_preflight: bool = False,
 ) -> list[dict]:
     output_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
+    resolved_ollama_host = resolve_ollama_host(ollama_host)
     if csv_text_columns:
         csv_all_columns = False
     selected_prompt_strategies = prompt_strategies if prompt_strategies else [prompt_strategy]
@@ -103,6 +110,44 @@ def generate_narratives(
         for strategy in selected_prompt_strategies:
             validate_prompt_strategy(source.prompt_kind, strategy)
 
+    print("Ollama startup check", flush=True)
+    print(f"  Host: {resolved_ollama_host}", flush=True)
+    print(f"  Models selected: {len(models)}", flush=True)
+    print(f"  Input strategy: {input_strategy}", flush=True)
+    print(f"  Prompt strategies: {', '.join(selected_prompt_strategies)}", flush=True)
+    if num_ctx is None:
+        print("  num_ctx policy: per-model context_length for full input; 8192 otherwise", flush=True)
+    else:
+        print(f"  num_ctx policy: explicit override {num_ctx}", flush=True)
+    print("  Concurrency: sequential local Ollama requests", flush=True)
+
+    if skip_ollama_preflight:
+        print("  Reachable: skipped by --skip-ollama-preflight", flush=True)
+    else:
+        try:
+            available_models = list_ollama_models(resolved_ollama_host)
+        except RuntimeError as exc:
+            print("  Reachable: no", flush=True)
+            raise RuntimeError(
+                f"Ollama is not reachable at {resolved_ollama_host}.\n"
+                "Start it with:\n"
+                "    ollama serve\n"
+                "Then verify with:\n"
+                "    ollama list\n"
+                f"    Invoke-WebRequest {resolved_ollama_host}/api/tags\n"
+                f"Details: {exc}"
+            ) from exc
+        print("  Reachable: yes", flush=True)
+        for model in models:
+            print(f"  Model available: {model}: {'yes' if model in available_models else 'no'}", flush=True)
+        missing_models = sorted(set(models) - set(available_models))
+        if missing_models:
+            raise RuntimeError(
+                "The following requested Ollama model(s) are not installed locally: "
+                + ", ".join(missing_models)
+                + ". Install them with 'ollama pull <model>' or choose a different --models/--model-preset value."
+            )
+
     for source in source_records:
         if not source.source_text.strip():
             records.append({
@@ -121,6 +166,8 @@ def generate_narratives(
                 "prompt_strategy": "",
                 "input_strategy": input_strategy,
                 "resolved_input_strategy": "",
+                "ollama_host": resolved_ollama_host,
+                "num_ctx": "",
                 "original_source_word_count": 0,
                 "prepared_source_word_count": 0,
                 "selected_chunk_count": 0,
@@ -154,7 +201,25 @@ def generate_narratives(
                 method = f"{model_slug}__{input_slug}__{safe_model_name(strategy)}" if source.source_type == "docx" else f"{model_slug}__{safe_model_name(strategy)}"
                 resolved_num_ctx = resolve_num_ctx_for_model(model, input_strategy, num_ctx)
                 for run in range(1, runs + 1):
-                    result = generate_ollama(prompt, model, temperature=temperature, num_ctx=resolved_num_ctx)
+                    print(
+                        "Starting generation | "
+                        f"host={resolved_ollama_host} | "
+                        f"source={source.source_path.name} | "
+                        f"model={model} | "
+                        f"prompt_strategy={strategy} | "
+                        f"run={run} | "
+                        f"num_ctx={resolved_num_ctx}",
+                        flush=True,
+                    )
+                    result = generate_ollama(
+                        prompt,
+                        model,
+                        temperature=temperature,
+                        num_ctx=resolved_num_ctx,
+                        timeout=ollama_timeout,
+                        ollama_host=resolved_ollama_host,
+                        retries=ollama_retries,
+                    )
                     out = output_dir / build_output_filename(source, model, run, prompt_strategy=strategy, input_strategy=input_strategy if source.source_type == "docx" else None)
                     out.write_text(result.text, encoding="utf-8")
                     output_word_count = source_text_word_count(SourceRecord(source.source_type, out, result.text, source.prompt_kind))
@@ -174,6 +239,8 @@ def generate_narratives(
                         "prompt_strategy": strategy,
                         "input_strategy": input_strategy if source.source_type == "docx" else "csv-row",
                         "resolved_input_strategy": resolved_input_strategy,
+                        "ollama_host": resolved_ollama_host,
+                        "num_ctx": resolved_num_ctx,
                         "original_source_word_count": source_text_word_count(source),
                         "prepared_source_word_count": prepared_word_count,
                         "selected_chunk_count": 0 if source.source_type == "csv" else prepared.selected_chunk_count,
@@ -188,8 +255,18 @@ def generate_narratives(
                         "error": result.error or "",
                     })
                     if result.error:
-                        print(f"Generation failed for {source.source_path.name} with {model} / {strategy} run {run}: {result.error}")
+                        print(
+                            "Generation failed | "
+                            f"host={resolved_ollama_host} | "
+                            f"source={source.source_path.name} | "
+                            f"model={model} | "
+                            f"prompt_strategy={strategy} | "
+                            f"run={run} | "
+                            f"num_ctx={resolved_num_ctx} | "
+                            f"error={result.error}",
+                            flush=True,
+                        )
                     else:
-                        print(f"Saved {out}")
+                        print(f"Saved {out}", flush=True)
     _save_run_manifest(output_dir, records)
     return records

@@ -31,6 +31,7 @@ class PairSpec:
     row_id: str = ""
     row_title: str = ""
     runtime_seconds: float | None = None
+    num_ctx: int | None = None
 
 
 def discover_sources(sources_dir: Path) -> list[Path]:
@@ -163,6 +164,7 @@ def load_manifest(path: Path) -> list[PairSpec]:
     pairs: list[PairSpec] = []
     for row in rows:
         runtime = str(row.get("runtime_seconds", "")).strip()
+        num_ctx_value = str(row.get("num_ctx", "")).strip()
         source_type = str(row.get("source_type", "docx")).strip().lower() or "docx"
         row_index_value = str(row.get("row_index", "")).strip()
         row_index = int(row_index_value) if row_index_value.isdigit() else None
@@ -190,45 +192,59 @@ def load_manifest(path: Path) -> list[PairSpec]:
                 row_id=str(row.get("row_id", "")).strip(),
                 row_title=str(row.get("row_title", "")).strip(),
                 runtime_seconds=float(runtime) if runtime else None,
+                num_ctx=int(num_ctx_value) if num_ctx_value.isdigit() else None,
             )
         )
     return pairs
 
 
-def _load_runtime_manifest(output_dir: Path) -> dict[str, float]:
-    runtime_map: dict[str, float] = {}
+def _load_generation_manifest_values(output_dir: Path) -> dict[str, dict[str, float | int]]:
+    value_map: dict[str, dict[str, float | int]] = {}
     for candidate in (output_dir / "generation_metadata.csv", output_dir / "generation_runs.csv", output_dir / "runs.csv", output_dir / "manifest.csv"):
         if not candidate.exists():
             continue
         for row in read_csv(candidate):
             output_value = str(row.get("output", "")).strip()
+            if not output_value:
+                continue
+            values: dict[str, float | int] = {}
             runtime_value = str(row.get("runtime_seconds", "")).strip()
-            if not output_value or not runtime_value:
-                continue
             try:
-                runtime = float(runtime_value)
+                if runtime_value:
+                    values["runtime_seconds"] = float(runtime_value)
             except ValueError:
+                pass
+            num_ctx_value = str(row.get("num_ctx", "")).strip()
+            if num_ctx_value.isdigit():
+                values["num_ctx"] = int(num_ctx_value)
+            if not values:
                 continue
-            runtime_map[output_value] = runtime
-            runtime_map[Path(output_value).name] = runtime
-            runtime_map[str(Path(output_value).resolve())] = runtime
-    return runtime_map
+            value_map[output_value] = values
+            value_map[Path(output_value).name] = values
+            value_map[str(Path(output_value).resolve())] = values
+    return value_map
 
 
 def enrich_pairs_with_runtime(pairs: list[PairSpec], outputs_dir: Path | None) -> list[PairSpec]:
     if outputs_dir is None:
         return pairs
-    runtime_map = _load_runtime_manifest(outputs_dir)
-    if not runtime_map:
+    value_map = _load_generation_manifest_values(outputs_dir)
+    if not value_map:
         return pairs
 
     enriched: list[PairSpec] = []
     for pair in pairs:
         runtime = pair.runtime_seconds
+        num_ctx = pair.num_ctx
         if runtime is None:
             for key in (str(pair.output_path), pair.output_path.name, str(pair.output_path.resolve())):
-                if key in runtime_map:
-                    runtime = runtime_map[key]
+                if key in value_map and "runtime_seconds" in value_map[key]:
+                    runtime = float(value_map[key]["runtime_seconds"])
+                    break
+        if num_ctx is None:
+            for key in (str(pair.output_path), pair.output_path.name, str(pair.output_path.resolve())):
+                if key in value_map and "num_ctx" in value_map[key]:
+                    num_ctx = int(value_map[key]["num_ctx"])
                     break
         enriched.append(
             PairSpec(
@@ -245,6 +261,7 @@ def enrich_pairs_with_runtime(pairs: list[PairSpec], outputs_dir: Path | None) -
                 row_id=pair.row_id,
                 row_title=pair.row_title,
                 runtime_seconds=runtime,
+                num_ctx=num_ctx,
             )
         )
     return enriched
@@ -330,6 +347,7 @@ def evaluate_pair(pair: PairSpec, semantic_method: str = "sentence-transformers"
         "parameters": metadata["parameters"],
         "quantization": metadata["quantization"],
         "context_length": metadata["context_length"],
+        "num_ctx": pair.num_ctx,
         "row_index": pair.row_index if pair.row_index is not None else "",
         "row_id": pair.row_id,
         "row_title": pair.row_title,
@@ -388,6 +406,8 @@ def compute_case_method_summary(run_rows: list[dict]) -> list[dict]:
         metadata = _model_metadata_or_empty(model)
         runtime_values = [value for r in rows if (value := _safe_float(r.get("runtime_seconds"))) is not None]
         mean_runtime_seconds = statistics.mean(runtime_values) if runtime_values else 0.0
+        num_ctx_values = sorted({int(value) for r in rows if (value := _safe_float(r.get("num_ctx"))) is not None})
+        num_ctx = num_ctx_values[0] if len(num_ctx_values) == 1 else ";".join(str(value) for value in num_ctx_values)
         word_values = [value for r in rows if (value := _safe_float(r.get("word_count"))) is not None]
         paragraph_values = [value for r in rows if (value := _safe_float(r.get("paragraph_count"))) is not None]
         mean_word_count = statistics.mean(word_values) if word_values else 0.0
@@ -436,6 +456,7 @@ def compute_case_method_summary(run_rows: list[dict]) -> list[dict]:
                     "parameters": metadata["parameters"],
                     "quantization": metadata["quantization"],
                     "context_length": metadata["context_length"],
+                    "num_ctx": num_ctx,
                     "method": str(rows[0].get("method", f"{model}__{prompt_strategy}")),
                     "input_strategy": input_strategy,
                     "prompt_kind": prompt_kind,
@@ -487,6 +508,7 @@ def compute_case_method_summary(run_rows: list[dict]) -> list[dict]:
                 "parameters": metadata["parameters"],
                 "quantization": metadata["quantization"],
                 "context_length": metadata["context_length"],
+                "num_ctx": num_ctx,
                 "method": str(rows[0].get("method", f"{model}__{input_strategy}__{prompt_strategy}")),
                 "input_strategy": input_strategy,
                 "prompt_kind": prompt_kind,
@@ -537,6 +559,8 @@ def compute_model_overall_summary(case_summaries: list[dict]) -> list[dict]:
         b_values = [value for r in rows if (value := _safe_float(r.get("mean_bertscore_f1"))) is not None]
         semantic_values = [value for r in rows if (value := _safe_float(r.get("mean_semantic_similarity"))) is not None]
         total_runs = sum(int(r["number_of_runs"]) for r in rows)
+        num_ctx_values = sorted({int(value) for r in rows if (value := _safe_float(r.get("num_ctx"))) is not None})
+        num_ctx = num_ctx_values[0] if len(num_ctx_values) == 1 else ";".join(str(value) for value in num_ctx_values)
         failed_runs = sum(int(r["failed_runs"]) for r in rows)
         mean_runtime_values = [value for r in rows if (value := _safe_float(r.get("mean_runtime_seconds"))) is not None]
         mean_runtime_seconds = statistics.mean(mean_runtime_values) if mean_runtime_values else 0.0
@@ -560,6 +584,7 @@ def compute_model_overall_summary(case_summaries: list[dict]) -> list[dict]:
                 "parameters": metadata["parameters"],
                 "quantization": metadata["quantization"],
                 "context_length": metadata["context_length"],
+                "num_ctx": num_ctx,
                 "method": str(rows[0].get("method", f"{model}__{input_strategy}__{prompt_strategy}" if source_type != "csv" else f"{model}__{prompt_strategy}")),
                 "prompt_strategy": prompt_strategy,
                 "input_strategy": input_strategy,
@@ -671,6 +696,8 @@ def compute_model_prompt_summary(case_summaries: list[dict]) -> list[dict]:
         preferred = csv_nrs_values if source_type == "csv" else nrs_values
         rank_score = statistics.mean(preferred) if preferred else None
         metadata = _model_metadata_or_empty(model)
+        num_ctx_values = sorted({int(value) for r in rows if (value := _safe_float(r.get("num_ctx"))) is not None})
+        num_ctx = num_ctx_values[0] if len(num_ctx_values) == 1 else ";".join(str(value) for value in num_ctx_values)
 
         summaries.append(
             {
@@ -680,6 +707,8 @@ def compute_model_prompt_summary(case_summaries: list[dict]) -> list[dict]:
                 "arch": metadata["arch"],
                 "parameters": metadata["parameters"],
                 "quantization": metadata["quantization"],
+                "context_length": metadata["context_length"],
+                "num_ctx": num_ctx,
                 "prompt_kind": prompt_kind,
                 "prompt_strategy": prompt_strategy,
                 "input_strategy": input_strategy,
@@ -718,6 +747,7 @@ def _load_run_rows_from_csv(runs_csv: Path) -> list[dict]:
         if not prompt_strategy:
             prompt_strategy = str(row.get("method", "")).split("__", 2)[-1] if "__" in str(row.get("method", "")) else "standard"
         metadata = _model_metadata_or_empty(str(row.get("model", row.get("method", "")).split("__", 1)[0]))
+        num_ctx_value = _safe_float(row.get("num_ctx"))
         run_rows.append(
             {
                 "source_type": source_type,
@@ -729,6 +759,7 @@ def _load_run_rows_from_csv(runs_csv: Path) -> list[dict]:
                 "parameters": metadata["parameters"],
                 "quantization": metadata["quantization"],
                 "context_length": metadata["context_length"],
+                "num_ctx": None if num_ctx_value is None else int(num_ctx_value),
                 "row_index": row_index,
                 "row_id": row.get("row_id", ""),
                 "row_title": row.get("row_title", ""),

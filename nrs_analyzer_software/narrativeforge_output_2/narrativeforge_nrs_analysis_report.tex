@@ -1,0 +1,91 @@
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[margin=1in]{geometry}
+\begin{document}
+\title{NarrativeForge NRS Benchmark Analysis}
+\maketitle
+\section{Model Family Analysis}
+The strongest model-level result is gemma4:e2b with best\_NRS=86.266 under full input.
+
+
+Strategy effects are model-dependent; the model-strategy matrix should be used to check whether RAG or full context benefits all models equally.
+
+
+At family level, gemma2 reaches the highest observed max\_NRS=97.540 across 3 model(s).
+
+
+Scaling curves reveal whether larger models consistently improve NRS or whether quality plateaus within each family, indicating diminishing returns.
+
+
+The best configuration is gemma3:12b + full + detailed with mean\_NRS=87.868 and runtime=9.455s.
+
+
+The highest-NRS configuration is not the fastest among the top five; gemma4:e2b + full + detailed is the fastest top-five option.
+
+
+Smaller models remain competitive when they appear near the top of the strategy matrix or Pareto frontier despite lower parameter counts.
+
+
+\section{Global Model Strategy Matrix}
+\begin{tabular}{lrrrrrlrrr}
+\toprule
+model & parameters & auto\_NRS & brief\_NRS & rag\_NRS & full\_NRS & best\_strategy & best\_NRS & mean\_runtime & failure\_rate \\
+\midrule
+gemma4:e2b & 5.120 & 85.405 & 79.994 & 85.290 & 86.266 & full & 86.266 & 6.935 & 0.267 \\
+gemma2:9b & 9.240 & 84.487 & 79.756 & 84.910 & 86.117 & full & 86.117 & 4.515 & 0.474 \\
+gemma3:12b & 12.200 & 85.842 & 81.340 & 84.619 & 86.019 & full & 86.019 & 7.689 & 0.306 \\
+gemma4:12b & 12.200 & 70.920 & 60.656 & 75.776 & 85.938 & full & 85.938 & 38.136 & 0.489 \\
+gemma3:27b & 27.400 & 85.064 & 81.522 & 85.419 & 85.024 & rag & 85.419 & 11.578 & 0.252 \\
+gemma4:e4b & 8.000 & 85.410 & 79.164 & 85.367 & 85.252 & auto & 85.410 & 11.455 & 0.249 \\
+gemma3:4b & 4.300 & 84.872 & 82.332 & 85.127 & 84.766 & rag & 85.127 & 4.836 & 0.126 \\
+qwen3:32b & 32.800 & 84.828 & 80.568 & 85.028 & 84.809 & rag & 85.028 & 19.965 & 0.200 \\
+deepseek-v2:16b & 15.700 & 82.995 & 78.436 & 84.181 & 85.021 & full & 85.021 & 29.147 & 0.519 \\
+qwen3:14b & 14.800 & 84.385 & 80.828 & 84.843 & 84.845 & full & 84.845 & 11.148 & 0.131 \\
+gemma4:26b & 25.800 & 77.812 & 77.212 & 79.630 & 84.794 & full & 84.794 & 22.445 & 0.383 \\
+gemma2:27b & 27.200 & 84.738 & 80.074 & 84.118 & 84.572 & auto & 84.738 & 10.628 & 0.452 \\
+gemma3:1b & 0.999 & 79.345 & 80.089 & 84.730 & 78.759 & rag & 84.730 & 4.605 & 0.721 \\
+qwen2.5:14b & 14.800 & 82.696 & 80.591 & 84.124 & 84.583 & full & 84.583 & 7.589 & 0.309 \\
+mistral-small:24b & 23.600 & 84.399 & 80.583 & 84.507 & 84.075 & rag & 84.507 & 10.166 & 0.215 \\
+qwen3:4b & 4.020 & 84.129 & 80.233 & 79.459 & 84.450 & full & 84.450 & 14.532 & 0.338 \\
+qwen3.5:35b & 36.000 & 72.033 & 75.361 & 63.750 & 84.422 & full & 84.422 & 25.442 & 0.511 \\
+qwen2.5:32b & 32.800 & 84.247 & 81.641 & 84.379 & 84.270 & rag & 84.379 & 13.147 & 0.365 \\
+qwen3:30b & 30.500 & 84.337 & 80.511 & 83.436 & 83.983 & auto & 84.337 & 10.952 & 0.309 \\
+gemma4:31b & 31.300 & 83.286 & 78.759 & 84.104 & 84.298 & full & 84.298 & 84.401 & 0.272 \\
+\bottomrule
+\end{tabular}
+
+\section{Family Summary}
+\begin{tabular}{lrrrrr}
+\toprule
+family & n\_models & mean\_NRS & max\_NRS & mean\_runtime & mean\_failure\_rate \\
+\midrule
+gemma2 & 3 & 83.675 & 97.540 & 6.954 & 0.509 \\
+gemma4 & 5 & 82.409 & 94.712 & 35.622 & 0.332 \\
+gemma3 & 4 & 84.283 & 94.447 & 7.794 & 0.351 \\
+mistral & 4 & 83.323 & 94.335 & 10.154 & 0.540 \\
+qwen2.5 & 3 & 83.124 & 94.333 & 9.086 & 0.353 \\
+deepseek & 4 & 81.241 & 93.491 & 28.523 & 0.564 \\
+qwen3 & 7 & 83.266 & 93.251 & 12.427 & 0.315 \\
+phi & 3 & 79.896 & 93.051 & 7.052 & 0.449 \\
+qwen3.5 & 6 & 71.232 & 92.867 & 61.258 & 0.702 \\
+granite & 2 & 82.515 & 92.097 & 4.365 & 0.526 \\
+llama & 3 & 80.457 & 91.501 & 4.177 & 0.398 \\
+cogito & 4 & 80.579 & 88.886 & 8.582 & 0.720 \\
+\bottomrule
+\end{tabular}
+
+\section{Top-5 Configurations}
+\begin{tabular}{rlllrrrr}
+\toprule
+rank & model & input\_strategy & prompt\_strategy & mean\_NRS & runtime\_seconds & parameters & failure\_rate \\
+\midrule
+1 & gemma3:12b & full & detailed & 87.868 & 9.455 & 12.200 & 0.000 \\
+2 & gemma4:12b & full & detailed & 87.423 & 45.253 & 12.200 & 0.037 \\
+3 & gemma4:e4b & full & detailed & 87.225 & 10.925 & 8.000 & 0.000 \\
+4 & gemma4:e4b & rag & detailed & 87.164 & 12.134 & 8.000 & 0.000 \\
+5 & gemma4:e2b & full & detailed & 87.003 & 8.442 & 5.120 & 0.000 \\
+\bottomrule
+\end{tabular}
+
+\end{document}

@@ -1,0 +1,235 @@
+Metadata-Version: 2.4
+Name: narrativeforge-nrs-analyzer
+Version: 1.0.0
+Summary: Reusable benchmark analysis software for NarrativeForge NRS experiments
+Author: NarrativeForge Benchmark Analysis
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pandas>=1.5
+Requires-Dist: numpy>=1.23
+Requires-Dist: matplotlib>=3.6
+Provides-Extra: dashboard
+Requires-Dist: streamlit>=1.28; extra == "dashboard"
+Provides-Extra: test
+Requires-Dist: pytest>=7; extra == "test"
+Provides-Extra: coverage
+Requires-Dist: sentence-transformers; extra == "coverage"
+Requires-Dist: scikit-learn; extra == "coverage"
+Requires-Dist: spacy; extra == "coverage"
+Requires-Dist: keybert; extra == "coverage"
+
+# NarrativeForge NRS Analyzer
+
+NarrativeForge NRS Analyzer is a reusable Python application for analyzing NarrativeForge benchmark exports. It loads a ZIP archive or extracted directory containing one or more `nrs_runs.csv` files, focuses on `NRS` as the main quality metric, computes quality/efficiency/deployment summaries, and generates charts and reports.
+
+The software is designed for benchmark folders such as:
+
+```text
+benchmark_all_auto/
+benchmark_all_brief/
+benchmark_all_rag/
+benchmark_all_full/
+```
+
+Each folder should contain `nrs_runs.csv`. Other summary CSVs can be present but are not required. The analyzer derives `input_strategy` from the parent folder name when possible, so `benchmark_all_auto` becomes `auto`, `benchmark_all_brief` becomes `brief`, and so on.
+
+## What it produces
+
+For each run, the analyzer creates:
+
+```text
+combined_nrs_runs.csv
+analysis_summary.json
+figure_interpretations.json
+narrativeforge_nrs_analysis_report.md
+narrativeforge_nrs_analysis_report.html
+narrativeforge_nrs_analysis_output.zip
+figures/
+  01_mean_nrs_by_input_strategy.png
+  02_mean_nrs_by_prompt_strategy.png
+  03_input_prompt_nrs_heatmap.png
+  04_mean_runtime_by_input_strategy.png
+  05_runtime_vs_parameters_by_input.png
+  06_runtime_vs_parameters_by_input_prompt.png
+  07_nrs_vs_runtime_bubble_parameters.png
+  08_nrs_vs_parameters_bubble_runtime.png
+  09_top_balanced_configurations.png
+  10_quality_loss_vs_parameter_threshold.png
+  11_pareto_frontier.png
+tables/
+  descriptive_statistics.csv
+  input_strategy_summary.csv
+  prompt_strategy_summary.csv
+  input_prompt_summary.csv
+  model_summary.csv
+  model_input_summary.csv
+  model_prompt_summary.csv
+  model_by_input_pivot_mean_NRS.csv
+  model_by_prompt_pivot_mean_NRS.csv
+  size_bin_summary.csv
+  configuration_summary_with_efficiency.csv
+  quality_loss_by_parameter_threshold.csv
+  best_tradeoff_configurations.csv
+  pareto_optimal_configurations.csv
+  parameter_correlations_by_input_strategy.csv
+  parameter_correlation_summary.csv
+```
+
+## Analyses included
+
+The software answers the same research questions as the thesis-style report:
+
+1. Which input strategy produces the highest NRS?
+2. Which prompt strategy produces the highest NRS?
+3. Which input strategy x prompt strategy combination performs best?
+4. Which model gives the highest NRS?
+5. How does model size affect NRS?
+6. How does model size affect runtime?
+7. What NRS is lost under parameter thresholds: `<=2B`, `<=4B`, `<=8B`, `<=16B`, and all models?
+8. Which configurations provide the best quality-efficiency tradeoff?
+9. Which configurations are suitable for normal-computer deployment?
+
+It computes:
+
+```text
+NRS per second
+NRS per billion parameters
+NRS per parameter-second
+balanced score
+Pareto-optimal configurations
+failure rate
+stability across runs
+```
+
+The default balanced score is:
+
+```text
+balanced_score =
+0.50 * normalized_NRS
++ 0.20 * normalized_speed
++ 0.15 * normalized_size_efficiency
++ 0.10 * normalized_stability
++ 0.05 * normalized_reliability
+```
+
+The weights are configurable from both the CLI and dashboard.
+
+## Installation
+
+From the software directory:
+
+```bash
+python -m pip install -e .
+```
+
+For the web dashboard:
+
+```bash
+python -m pip install -e .[dashboard]
+```
+
+Alternatively, install dependencies manually:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+## Command-line usage
+
+Analyze a ZIP file:
+
+```bash
+nrs-analyze experiments.zip -o narrativeforge_output
+```
+
+Or run without installing by using the module path:
+
+```bash
+python -m narrativeforge_nrs_analyzer.cli experiments.zip -o narrativeforge_output
+```
+
+Customize strategy ordering and balanced-score weights:
+
+```bash
+nrs-analyze experiments.zip \
+  -o narrativeforge_output \
+  --input-order auto,brief,rag,full \
+  --prompt-order short,standard,detailed \
+  --weights 0.50,0.20,0.15,0.10,0.05 \
+  --reliable-failure-max 0.05
+```
+
+You can also provide weights as JSON:
+
+```bash
+nrs-analyze experiments.zip \
+  -o narrativeforge_output \
+  --weights '{"NRS":0.60,"speed":0.15,"size_efficiency":0.10,"stability":0.10,"reliability":0.05}'
+```
+
+## Dashboard usage
+
+Launch the dashboard:
+
+```bash
+nrs-dashboard
+```
+
+Or:
+
+```bash
+streamlit run narrativeforge_nrs_analyzer/app.py
+```
+
+Then upload `experiments.zip`, adjust the balanced-score weights, run the analysis, inspect tables and figures, and download the generated output ZIP.
+
+## Data handling policy
+
+- `NRS` is the main quality metric.
+- `CSV_NRS` is not used for main conclusions.
+- `runtime_seconds` is the execution-time metric.
+- `parameters` is used when present.
+- If `parameters` is missing or ambiguous, the analyzer infers billions of parameters from model names such as `gemma3:4b`, `qwen3:8b`, or `llama:70b`.
+- Failed runs are retained in all-attempt summaries and summarized through `failure_rate`.
+- Successful-run quality summaries are also included where applicable.
+- Runtime should be interpreted comparatively unless the deployment hardware is equivalent to the benchmark machine.
+
+## Python API
+
+```python
+from narrativeforge_nrs_analyzer import AnalysisOptions, run_analysis
+
+options = AnalysisOptions(
+    input_order=["auto", "brief", "rag", "full"],
+    prompt_order=["short", "standard", "detailed"],
+    balanced_weights={
+        "NRS": 0.50,
+        "speed": 0.20,
+        "size_efficiency": 0.15,
+        "stability": 0.10,
+        "reliability": 0.05,
+    },
+)
+
+result = run_analysis("experiments.zip", "analysis_output", options)
+print(result.summary["best_model"])
+print(result.bundle_path)
+```
+
+## Pareto frontier definition
+
+A configuration is Pareto-optimal if no other configuration simultaneously has:
+
+```text
+higher or equal NRS
+lower or equal runtime
+fewer or equal parameters
+lower or equal failure rate
+```
+
+with at least one strictly better dimension.
+
+## Notes for thesis or paper use
+
+The generated Markdown and HTML reports are intended as a structured starting point for a thesis chapter, technical report, or paper results section. They include evidence tables, figures, and interpretations. Researchers should add study-specific context, benchmark-design details, and any manual qualitative review results before publication.

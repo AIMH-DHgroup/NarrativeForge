@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from .benchmark import evaluate_folder, summarize_runs_csv, write_manifest_template
@@ -38,6 +39,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output-dir", default="outputs")
     p.add_argument("--temperature", type=float, default=0.1)
     p.add_argument("--num-ctx", type=int, default=None)
+    p.add_argument("--ollama-host", default=None, help="Ollama host URL. Defaults to OLLAMA_HOST or http://localhost:11434")
+    p.add_argument("--ollama-timeout", type=int, default=900, help="Ollama request timeout in seconds")
+    p.add_argument("--ollama-retries", type=int, default=1, help="Retries for transient Ollama HTTP 5xx responses")
+    p.add_argument("--skip-ollama-preflight", action="store_true", help="Skip Ollama reachability and local model checks")
 
     p = sub.add_parser("evaluate", help="Compute NRS benchmark reports")
     p.add_argument("--sources-dir", default=None)
@@ -82,6 +87,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--outdir", default="benchmark_results")
     p.add_argument("--temperature", type=float, default=0.1)
     p.add_argument("--num-ctx", type=int, default=None)
+    p.add_argument("--ollama-host", default=None, help="Ollama host URL. Defaults to OLLAMA_HOST or http://localhost:11434")
+    p.add_argument("--ollama-timeout", type=int, default=900, help="Ollama request timeout in seconds")
+    p.add_argument("--ollama-retries", type=int, default=1, help="Retries for transient Ollama HTTP 5xx responses")
+    p.add_argument("--skip-ollama-preflight", action="store_true", help="Skip Ollama reachability and local model checks")
     p.add_argument("--excel", action="store_true")
 
     return parser
@@ -91,33 +100,47 @@ def _write_summary(csv_path: Path, outdir: Path) -> None:
     summarize_runs_csv(csv_path, outdir)
 
 
+def _require_existing_file(path: Path, label: str) -> None:
+    if not path.exists():
+        raise FileNotFoundError(f"{label} not found: {path}. Run the benchmark step first and check whether it failed before producing nrs_runs.csv.")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     models = resolve_models(getattr(args, "models", None), getattr(args, "model_preset", None))
 
     if args.command == "generate":
-        generate_narratives(
-            Path(args.input),
-            models,
-            args.runs,
-            Path(args.output_dir),
-            args.temperature,
-            args.num_ctx,
-            input_strategy=args.input_strategy,
-            max_source_words=args.max_source_words,
-            chunk_words=args.chunk_words,
-            chunk_overlap=args.chunk_overlap,
-            top_k=args.top_k,
-            csv_id_column=args.csv_id_column,
-            csv_title_column=args.csv_title_column,
-            csv_text_columns=args.csv_text_columns,
-            csv_all_columns=args.csv_all_columns,
-            csv_max_rows=args.csv_max_rows,
-            prompt_kind=args.prompt_kind,
-            prompt_strategy=args.prompt_strategy,
-            prompt_strategies=args.prompt_strategies,
-        )
+        try:
+            generate_narratives(
+                Path(args.input),
+                models,
+                args.runs,
+                Path(args.output_dir),
+                args.temperature,
+                args.num_ctx,
+                input_strategy=args.input_strategy,
+                max_source_words=args.max_source_words,
+                chunk_words=args.chunk_words,
+                chunk_overlap=args.chunk_overlap,
+                top_k=args.top_k,
+                csv_id_column=args.csv_id_column,
+                csv_title_column=args.csv_title_column,
+                csv_text_columns=args.csv_text_columns,
+                csv_all_columns=args.csv_all_columns,
+                csv_max_rows=args.csv_max_rows,
+                prompt_kind=args.prompt_kind,
+                prompt_strategy=args.prompt_strategy,
+                prompt_strategies=args.prompt_strategies,
+                ollama_host=args.ollama_host,
+                ollama_timeout=args.ollama_timeout,
+                ollama_retries=args.ollama_retries,
+                skip_ollama_preflight=args.skip_ollama_preflight,
+            )
+        except RuntimeError as exc:
+            sys.stdout.flush()
+            print(str(exc), file=sys.stderr)
+            return 1
         return 0
     if args.command == "evaluate":
         evaluate_folder(
@@ -130,37 +153,58 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     if args.command == "summarize":
-        _write_summary(Path(args.csv), Path(args.outdir))
+        csv_path = Path(args.csv)
+        try:
+            _require_existing_file(csv_path, "Summary input CSV")
+            _write_summary(csv_path, Path(args.outdir))
+        except FileNotFoundError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
         return 0
     if args.command == "visualize":
-        visualize_results(Path(args.csv), Path(args.outdir))
+        csv_path = Path(args.csv)
+        try:
+            _require_existing_file(csv_path, "Visualization input CSV")
+            visualize_results(csv_path, Path(args.outdir))
+        except FileNotFoundError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
         return 0
     if args.command == "write-manifest-template":
         write_manifest_template(Path(args.path))
         return 0
     if args.command == "all":
         input_path = Path(args.input)
-        generate_narratives(
-            input_path,
-            models,
-            args.runs,
-            Path(args.output_dir),
-            args.temperature,
-            args.num_ctx,
-            input_strategy=args.input_strategy,
-            max_source_words=args.max_source_words,
-            chunk_words=args.chunk_words,
-            chunk_overlap=args.chunk_overlap,
-            top_k=args.top_k,
-            csv_id_column=args.csv_id_column,
-            csv_title_column=args.csv_title_column,
-            csv_text_columns=args.csv_text_columns,
-            csv_all_columns=args.csv_all_columns,
-            csv_max_rows=args.csv_max_rows,
-            prompt_kind=args.prompt_kind,
-            prompt_strategy=args.prompt_strategy,
-            prompt_strategies=args.prompt_strategies,
-        )
+        try:
+            generate_narratives(
+                input_path,
+                models,
+                args.runs,
+                Path(args.output_dir),
+                args.temperature,
+                args.num_ctx,
+                input_strategy=args.input_strategy,
+                max_source_words=args.max_source_words,
+                chunk_words=args.chunk_words,
+                chunk_overlap=args.chunk_overlap,
+                top_k=args.top_k,
+                csv_id_column=args.csv_id_column,
+                csv_title_column=args.csv_title_column,
+                csv_text_columns=args.csv_text_columns,
+                csv_all_columns=args.csv_all_columns,
+                csv_max_rows=args.csv_max_rows,
+                prompt_kind=args.prompt_kind,
+                prompt_strategy=args.prompt_strategy,
+                prompt_strategies=args.prompt_strategies,
+                ollama_host=args.ollama_host,
+                ollama_timeout=args.ollama_timeout,
+                ollama_retries=args.ollama_retries,
+                skip_ollama_preflight=args.skip_ollama_preflight,
+            )
+        except RuntimeError as exc:
+            sys.stdout.flush()
+            print(str(exc), file=sys.stderr)
+            return 1
         evaluate_folder(sources_dir=input_path if input_path.is_dir() else input_path.parent, outputs_dir=Path(args.output_dir), outdir=Path(args.outdir), excel=args.excel)
         return 0
     return 1

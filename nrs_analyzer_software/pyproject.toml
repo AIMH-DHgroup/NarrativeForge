@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "narrativeforge-nrs-analyzer"
+version = "1.0.0"
+description = "Reusable benchmark analysis software for NarrativeForge NRS experiments"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "NarrativeForge Benchmark Analysis"}]
+license = {text = "MIT"}
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+    "matplotlib>=3.6"
+]
+
+[project.optional-dependencies]
+dashboard = ["streamlit>=1.28"]
+test = ["pytest>=7"]
+coverage = ["sentence-transformers", "scikit-learn", "spacy", "keybert"]
+
+[project.scripts]
+nrs-analyze = "narrativeforge_nrs_analyzer.cli:main"
+nrs-dashboard = "narrativeforge_nrs_analyzer.app:main"
+
+[tool.setuptools.packages.find]
+include = ["narrativeforge_nrs_analyzer*"]

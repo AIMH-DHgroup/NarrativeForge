@@ -6,7 +6,7 @@ $CASE_STUDIES = "case_studies"
 $RUNS = 3
 
 $INPUT_STRATEGIES = @("auto", "full", "brief", "rag")
-$PROMPT_STRATEGIES = @("standard", "short", "detailed", "strict", "event_focused", "faithfulness_first", "digital_heritage_focused")
+$PROMPT_STRATEGIES = @("standard", "short", "detailed")
 
 function Stop-If-Failed {
     param([string]$StepName)
