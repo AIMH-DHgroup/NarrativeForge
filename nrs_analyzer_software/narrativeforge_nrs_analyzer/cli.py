@@ -61,8 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--coverage", action="store_true", help="Force coverage diagnostics and print stronger warnings if optional dependencies are missing.")
     parser.add_argument("--coverage-thresholds", nargs="+", type=float, default=[0.70, 0.75, 0.80], help="Sentence coverage thresholds. Default: 0.70 0.75 0.80")
     parser.add_argument("--coverage-model", default="sentence-transformers/all-MiniLM-L6-v2", help="Sentence-transformers model for coverage diagnostics.")
+    parser.add_argument("--recompute-coverage", action="store_true", help="Ignore coverage_metrics.csv and recompute all coverage diagnostics.")
     parser.add_argument("--skip-entity-coverage", action="store_true", help="Disable spaCy entity coverage.")
     parser.add_argument("--skip-keyphrase-coverage", action="store_true", help="Disable KeyBERT keyphrase coverage.")
+    parser.add_argument("--case-detail-plots", action="store_true", help="Generate per-case detailed plots under figures/case_studies/per_case/.")
     parser.add_argument("--version", action="version", version=f"narrativeforge-nrs-analyzer {__version__}")
     return parser
 
@@ -86,8 +88,10 @@ def main(argv: list[str] | None = None) -> int:
         coverage=args.coverage,
         coverage_thresholds=args.coverage_thresholds,
         coverage_model=args.coverage_model,
+        recompute_coverage=args.recompute_coverage,
         skip_entity_coverage=args.skip_entity_coverage,
         skip_keyphrase_coverage=args.skip_keyphrase_coverage,
+        case_detail_plots=args.case_detail_plots,
     )
     if args.hardware_note:
         options.hardware_note = args.hardware_note

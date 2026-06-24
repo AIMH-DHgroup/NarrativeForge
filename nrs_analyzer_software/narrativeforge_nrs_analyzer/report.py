@@ -154,6 +154,49 @@ def _coverage_interpretation(tables: dict[str, pd.DataFrame]) -> list[str]:
     return lines
 
 
+def _case_study_interpretation(tables: dict[str, pd.DataFrame]) -> list[str]:
+    summary = tables.get("case_study_summary", pd.DataFrame())
+    difficulty = tables.get("case_difficulty_ranking", pd.DataFrame())
+    stability = tables.get("case_stability_summary", pd.DataFrame())
+    input_delta = tables.get("case_input_strategy_delta", pd.DataFrame())
+    prompt_delta = tables.get("case_prompt_strategy_delta", pd.DataFrame())
+    size_loss = tables.get("case_model_size_loss", pd.DataFrame())
+    best = tables.get("best_configuration_by_case", pd.DataFrame())
+    if summary.empty:
+        return ["Case-study analysis was unavailable because no case-study identifier column was found."]
+    lines = [
+        f"The benchmark contains {len(summary)} case studies. Case-level aggregation reveals whether benchmark conclusions are driven by a small subset of cases or whether observed strategy effects are consistent across scenarios. A case with low mean NRS and high variance should be treated as intrinsically difficult or underspecified, while a case with high input-strategy range is particularly sensitive to retrieval or context length. Conversely, a case where small models remain close to the case-level optimum suggests that the task may depend more on source coverage and prompt structure than on model scale."
+    ]
+    easiest = summary.sort_values("mean_NRS", ascending=False).iloc[0]
+    hardest = summary.sort_values("mean_NRS", ascending=True).iloc[0]
+    lines.append(f"The easiest case by mean NRS is {easiest.get('case_study')} ({compact_float(easiest.get('mean_NRS'), 3)}), while the hardest is {hardest.get('case_study')} ({compact_float(hardest.get('mean_NRS'), 3)}).")
+    fail = summary.sort_values("failure_rate", ascending=False).iloc[0]
+    lines.append(f"The highest failure rate occurs for {fail.get('case_study')} ({percentage(fail.get('failure_rate'), 1)}).")
+    if not difficulty.empty:
+        hard = difficulty.iloc[0]
+        easy = difficulty.sort_values("difficulty_score", ascending=True).iloc[0]
+        lines.append(f"The difficulty score ranks {hard.get('case_study')} as hardest and {easy.get('case_study')} as easiest after combining inverse NRS, failure rate, and NRS variability.")
+    if not stability.empty:
+        most = stability.sort_values("stability_score", ascending=False).iloc[0]
+        least = stability.sort_values("stability_score", ascending=True).iloc[0]
+        lines.append(f"The most stable case is {most.get('case_study')}; the least stable is {least.get('case_study')}, based on normalized NRS standard deviation.")
+    if not input_delta.empty:
+        row = input_delta.sort_values("input_strategy_NRS_range", ascending=False).iloc[0]
+        lines.append(f"The case most sensitive to input strategy is {row.get('case_study')} with an NRS range of {compact_float(row.get('input_strategy_NRS_range'), 3)}.")
+    if not prompt_delta.empty:
+        row = prompt_delta.sort_values("prompt_strategy_NRS_range", ascending=False).iloc[0]
+        lines.append(f"The case most sensitive to prompt strategy is {row.get('case_study')} with an NRS range of {compact_float(row.get('prompt_strategy_NRS_range'), 3)}.")
+    if not size_loss.empty and "NRS_loss_vs_case_best" in size_loss.columns:
+        constrained = size_loss[size_loss["threshold"] != "all"].dropna(subset=["NRS_loss_vs_case_best"])
+        if not constrained.empty:
+            row = constrained.sort_values("NRS_loss_vs_case_best", ascending=False).iloc[0]
+            competitive = constrained.sort_values("NRS_loss_vs_case_best", ascending=True).iloc[0]
+            lines.append(f"The largest small-model quality loss appears for {row.get('case_study')} under {row.get('threshold')} ({compact_float(row.get('NRS_loss_vs_case_best'), 3)} NRS points). Small models remain most competitive for {competitive.get('case_study')} under {competitive.get('threshold')}.")
+    if not best.empty:
+        lines.append("The best-configuration-by-case table should be used to check whether the global best model also dominates individual case studies or whether different cases require different models and strategies.")
+    return lines
+
+
 def _append_unlisted_figures_markdown(lines: list[str], summary: dict[str, Any], listed: set[str]) -> None:
     for fig_key, fig_value in summary.get("figures", {}).items():
         if fig_key in listed:
@@ -271,6 +314,20 @@ def write_markdown_report(path: str | Path, df: pd.DataFrame, tables: dict[str, 
         lines.append(f"### {title}\n")
         lines.append("```text\n" + _df_text(tables.get(key, pd.DataFrame()), rows=20) + "\n```\n")
 
+    lines.append("## Case Study Analysis\n")
+    for text in _case_study_interpretation(tables):
+        lines.append(f"{text}\n")
+    for title, key in [
+        ("Case-study summary", "case_study_summary"),
+        ("Case difficulty ranking", "case_difficulty_ranking"),
+        ("Best configuration by case", "best_configuration_by_case"),
+        ("Case input-strategy deltas", "case_input_strategy_delta"),
+        ("Case prompt-strategy deltas", "case_prompt_strategy_delta"),
+        ("Case model-size loss", "case_model_size_loss"),
+    ]:
+        lines.append(f"### {title}\n")
+        lines.append("```text\n" + _df_text(tables.get(key, pd.DataFrame()), rows=30) + "\n```\n")
+
     lines.append("## Figures\n")
     listed_figures: set[str] = set()
     for item in summary.get("figure_interpretations", []):
@@ -382,6 +439,20 @@ def write_html_report(path: str | Path, df: pd.DataFrame, tables: dict[str, pd.D
     html_parts.append(_df_html(tables.get("coverage_by_input_strategy", pd.DataFrame()), rows=20))
     html_parts.append(_df_html(tables.get("high_alignment_low_coverage_cases", pd.DataFrame()), rows=30))
 
+    html_parts.append("<h2>Case Study Analysis</h2>")
+    for text in _case_study_interpretation(tables):
+        html_parts.append(f"<p>{html.escape(text)}</p>")
+    for title, key, rows in [
+        ("Case-study summary", "case_study_summary", 30),
+        ("Case difficulty ranking", "case_difficulty_ranking", 30),
+        ("Best configuration by case", "best_configuration_by_case", 30),
+        ("Case input-strategy deltas", "case_input_strategy_delta", 30),
+        ("Case prompt-strategy deltas", "case_prompt_strategy_delta", 30),
+        ("Case model-size loss", "case_model_size_loss", 60),
+    ]:
+        html_parts.append(f"<h3>{html.escape(title)}</h3>")
+        html_parts.append(_df_html(tables.get(key, pd.DataFrame()), rows=rows))
+
     html_parts.append("<h2>Figures and interpretations</h2>")
     listed_figures: set[str] = set()
     for item in summary.get("figure_interpretations", []):
@@ -435,6 +506,14 @@ def write_latex_report(path: str | Path, df: pd.DataFrame, tables: dict[str, pd.
     cov = tables.get("coverage_by_input_strategy", pd.DataFrame())
     if not cov.empty:
         lines.append(cov.head(20).to_latex(index=False, float_format="%.3f", escape=True))
+    lines.append(r"\section{Case Study Analysis}")
+    for text in _case_study_interpretation(tables):
+        lines.append(text.replace("_", r"\_"))
+        lines.append("\n")
+    for key in ["case_study_summary", "case_difficulty_ranking", "best_configuration_by_case", "case_input_strategy_delta", "case_prompt_strategy_delta", "case_model_size_loss"]:
+        table = tables.get(key, pd.DataFrame())
+        if not table.empty:
+            lines.append(table.head(20).to_latex(index=False, float_format="%.3f", escape=True))
     lines.append(r"\end{document}")
     path.write_text("\n".join(lines), encoding="utf-8")
     return path
@@ -466,6 +545,9 @@ def write_docx_report(path: str | Path, df: pd.DataFrame, tables: dict[str, pd.D
                 cells[i].text = compact_float(value, 3) if isinstance(value, float) else str(value)
     document.add_heading("Coverage Diagnostics and Omission Risk", level=1)
     for text in _coverage_interpretation(tables):
+        document.add_paragraph(text)
+    document.add_heading("Case Study Analysis", level=1)
+    for text in _case_study_interpretation(tables):
         document.add_paragraph(text)
     document.save(path)
     return path

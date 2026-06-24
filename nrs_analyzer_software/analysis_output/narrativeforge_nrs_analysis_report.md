@@ -322,34 +322,231 @@ granite3.3:2b granite            rag           short         2.530        27  ..
 
 BERTScore F1 and sentence-transformer semantic similarity were used as automatic semantic-alignment indicators between the generated narrative and the source document. They estimate whether the generated text preserves the meaning of the source at a global semantic level. However, because the comparison is performed between the complete generated narrative and the complete source document, these metrics may overestimate quality when the source is much longer than the generated narrative: a text can remain topically similar while omitting important facts, causal relations, or local details. Consequently, these measures do not replace expert factual validation, claim-level checking, or human evaluation of narrative faithfulness.
 
+The highest mean source coverage@0.75 is observed for input strategy rag_large (0.106).
+
+The largest mean omission risk@0.75 is observed for mistral-nemo:12b (0.808), indicating possible global similarity without broad source coverage.
+
+There are 4324 high-alignment/low-coverage cases with BERTScore F1 >= 0.85 and source coverage@0.75 <= 0.50.
+
 ### Coverage by input strategy
 
 ```text
-No data available.
+input_strategy  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+          auto              0.843                     0.746                     0.072                        0.380                   0.153  ...                      NaN                                 0.061                                           0.057                   0.772    2201         0.434
+         brief              0.828                     0.670                     0.031                        0.212                   0.140  ...                      NaN                                 0.026                                           0.022                   0.798    2121         0.454
+          full              0.850                     0.764                       NaN                          NaN                   0.000  ...                      NaN                                   NaN                                             NaN                     NaN    2371         0.390
+           rag              0.848                     0.756                     0.082                        0.440                   0.154  ...                      NaN                                 0.070                                           0.064                   0.766    2225         0.428
+     rag_large              0.854                     0.799                     0.106                        0.494                   0.207  ...                      NaN                                 0.091                                           0.086                   0.747    1225         0.685
 ```
 
 ### Coverage by prompt strategy
 
 ```text
-No data available.
+prompt_strategy  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+       detailed              0.845                     0.748                     0.077                        0.355                   0.151  ...                      NaN                                 0.066                                           0.061                   0.765    3708         0.428
+          short              0.844                     0.739                     0.051                        0.380                   0.081  ...                      NaN                                 0.043                                           0.039                   0.792    2918         0.550
+       standard              0.844                     0.740                     0.074                        0.375                   0.123  ...                      NaN                                 0.063                                           0.058                   0.767    3517         0.457
 ```
 
 ### Coverage by model
 
 ```text
-No data available.
+          model   family  parameters_b  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+     cogito:14b   cogito        14.800              0.831                     0.704                     0.045  ...                      NaN                                 0.038                                           0.033                   0.785      81         0.800
+     cogito:32b   cogito        32.800              0.839                     0.729                     0.042  ...                      NaN                                 0.035                                           0.032                   0.796     119         0.706
+      cogito:3b   cogito         3.610              0.838                     0.715                     0.049  ...                      NaN                                 0.042                                           0.037                   0.786     116         0.714
+      cogito:8b   cogito         8.030              0.841                     0.710                     0.052  ...                      NaN                                 0.044                                           0.039                   0.789     138         0.659
+deepseek-r1:14b deepseek        14.800              0.838                     0.728                     0.050  ...                      NaN                                 0.042                                           0.038                   0.787     179         0.558
+deepseek-r1:32b deepseek        32.800              0.844                     0.749                     0.058  ...                      NaN                                 0.049                                           0.045                   0.784     255         0.370
+ deepseek-r1:7b deepseek         7.620              0.835                     0.717                     0.031  ...                      NaN                                 0.026                                           0.024                   0.802      78         0.807
+deepseek-v2:16b deepseek        15.700              0.838                     0.736                     0.059  ...                      NaN                                 0.050                                           0.046                   0.777     195         0.519
+     gemma2:27b   gemma2        27.200              0.855                     0.759                     0.091  ...                      NaN                                 0.079                                           0.072                   0.763     222         0.452
+      gemma2:2b   gemma2         2.610              0.835                     0.737                     0.050  ...                      NaN                                 0.042                                           0.038                   0.785     161         0.602
+      gemma2:9b   gemma2         9.240              0.856                     0.779                     0.104  ...                      NaN                                 0.090                                           0.084                   0.750     213         0.474
+     gemma3:12b   gemma3        12.200              0.853                     0.768                     0.086  ...                      NaN                                 0.074                                           0.069                   0.764     281         0.306
+      gemma3:1b   gemma3         0.999              0.831                     0.687                     0.024  ...                      NaN                                 0.020                                           0.018                   0.807     113         0.721
+     gemma3:27b   gemma3        27.400              0.848                     0.760                     0.077  ...                      NaN                                 0.065                                           0.061                   0.770     303         0.252
+      gemma3:4b   gemma3         4.300              0.846                     0.762                     0.072  ...                      NaN                                 0.061                                           0.057                   0.772     354         0.126
+     gemma4:12b   gemma4        12.200              0.848                     0.749                     0.061  ...                      NaN                                 0.052                                           0.048                   0.782     207         0.489
+     gemma4:26b   gemma4        25.800              0.851                     0.750                     0.073  ...                      NaN                                 0.063                                           0.058                   0.777     250         0.383
+     gemma4:31b   gemma4        31.300              0.845                     0.745                     0.078  ...                      NaN                                 0.067                                           0.062                   0.766     295         0.272
+     gemma4:e2b   gemma4         5.120              0.858                     0.777                     0.111  ...                      NaN                                 0.096                                           0.091                   0.745     297         0.267
+     gemma4:e4b   gemma4         8.000              0.851                     0.765                     0.079  ...                      NaN                                 0.068                                           0.064                   0.770     304         0.249
 ```
 
 ### Coverage by model family
 
 ```text
-No data available.
+  family  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+  cogito              0.838                     0.715                     0.047                        0.333                   0.096  ...                      NaN                                 0.040                                           0.036                   0.790     454         0.720
+deepseek              0.840                     0.736                     0.053                        0.315                   0.115  ...                      NaN                                 0.045                                           0.041                   0.785     707         0.564
+  gemma2              0.850                     0.760                     0.084                        0.511                   0.109  ...                      NaN                                 0.072                                           0.067                   0.764     596         0.509
+  gemma3              0.847                     0.755                     0.071                        0.369                   0.127  ...                      NaN                                 0.060                                           0.056                   0.774    1051         0.351
+  gemma4              0.851                     0.758                     0.083                        0.409                   0.115  ...                      NaN                                 0.071                                           0.067                   0.766    1353         0.332
+ granite              0.838                     0.731                     0.073                        0.417                   0.125  ...                      NaN                                 0.062                                           0.057                   0.765     384         0.526
+   llama              0.841                     0.721                     0.068                        0.365                   0.132  ...                      NaN                                 0.058                                           0.052                   0.772     732         0.398
+ mistral              0.848                     0.747                     0.094                        0.484                   0.126  ...                      NaN                                 0.080                                           0.073                   0.752     746         0.540
+     phi              0.837                     0.728                     0.053                        0.317                   0.134  ...                      NaN                                 0.044                                           0.040                   0.784     670         0.449
+ qwen2.5              0.844                     0.739                     0.078                        0.397                   0.131  ...                      NaN                                 0.066                                           0.060                   0.765     786         0.353
+   qwen3              0.844                     0.750                     0.064                        0.297                   0.132  ...                      NaN                                 0.054                                           0.050                   0.779    1941         0.315
+ qwen3.5              0.841                     0.728                     0.044                        0.302                   0.086  ...                      NaN                                 0.037                                           0.034                   0.788     723         0.702
 ```
 
 ### High-alignment low-coverage cases
 
 ```text
-No data available.
+               model input_strategy prompt_strategy                       case_id  bertscore_f1  semantic_similarity  source_coverage_075  generation_support_075  compression_ratio  omission_risk_075
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        detailed           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+           gemma2:9b            rag        standard           italian_madrigals02         0.959                0.935                0.067                   1.000              0.073              0.892
+           gemma2:9b            rag        standard           italian_madrigals02         0.958                0.935                0.067                   1.000              0.073              0.891
+           gemma2:9b            rag           short           italian_madrigals02         0.901                0.793                0.016                   0.571              0.040              0.885
+          gemma4:e4b            rag           short           italian_madrigals02         0.884                0.746                0.000                   0.000              0.047              0.884
+           gemma2:9b            rag           short           italian_madrigals02         0.902                0.781                0.024                   0.600              0.039              0.879
+           gemma3:1b            rag        standard 02_re_sounding_museum_cobo_ep         0.955                0.880                0.079                   0.233              0.586              0.876
+           gemma2:9b            rag        standard           italian_madrigals02         0.956                0.935                0.083                   1.000              0.083              0.873
+          cogito:14b            rag           short           italian_madrigals02         0.875                0.793                0.004                   0.100              0.047              0.871
+           qwen3:14b            rag        standard           italian_madrigals02         0.879                0.837                0.008                   0.087              0.089              0.871
+         qwen3.5:35b            rag        detailed           renaissance_ferrara         0.897                0.885                0.027                   0.500              0.052              0.870
+mistral-small3.2:24b            rag        detailed           italian_madrigals02         0.898                0.818                0.028                   0.364              0.087              0.870
+         qwen3.5:35b            rag           short           italian_madrigals02         0.882                0.803                0.012                   0.273              0.048              0.870
+          qwen3:0.6b            rag        standard           italian_madrigals02         0.878                0.798                0.008                   0.222              0.035              0.870
+            qwen3:8b            rag           short           italian_madrigals02         0.869                0.757                0.000                   0.000              0.050              0.869
+mistral-small3.2:24b            rag           short           italian_madrigals02         0.881                0.828                0.012                   0.273              0.042              0.869
+         qwen3.5:35b            rag           short           italian_madrigals02         0.877                0.784                0.008                   0.167              0.048              0.869
+```
+
+## Case Study Analysis
+
+The benchmark contains 9 case studies. Case-level aggregation reveals whether benchmark conclusions are driven by a small subset of cases or whether observed strategy effects are consistent across scenarios. A case with low mean NRS and high variance should be treated as intrinsically difficult or underspecified, while a case with high input-strategy range is particularly sensitive to retrieval or context length. Conversely, a case where small models remain close to the case-level optimum suggests that the task may depend more on source coverage and prompt structure than on model scale.
+
+The easiest case by mean NRS is 02_georgian_poliphony (85.374), while the hardest is 02_re_sounding_museum_cobo_ep (75.172).
+
+The highest failure rate occurs for italian_madrigals02 (58.2%).
+
+The difficulty score ranks 02_re_sounding_museum_cobo_ep as hardest and valdeloire as easiest after combining inverse NRS, failure rate, and NRS variability.
+
+The most stable case is valdeloire; the least stable is 02_georgian_poliphony, based on normalized NRS standard deviation.
+
+The case most sensitive to input strategy is renaissance_ferrara with an NRS range of 10.339.
+
+The case most sensitive to prompt strategy is 02_georgian_poliphony with an NRS range of 2.160.
+
+The largest small-model quality loss appears for italian_madrigals02 under <=2B (10.961 NRS points). Small models remain most competitive for 02_mdv_from_craft_to_sound_cremona_ep under <=8B.
+
+The best-configuration-by-case table should be used to check whether the global best model also dominates individual case studies or whether different cases require different models and strategies.
+
+### Case-study summary
+
+```text
+                              case_study  n_runs  n_successful_runs  failure_rate  n_models  n_input_strategies  ...  min_NRS  max_NRS  mean_runtime_seconds  std_runtime_seconds  median_runtime_seconds  mean_parameters
+                   02_georgian_poliphony    2160               1097         0.492        48                   5  ...   40.444   97.540                17.751               34.833                   8.221           15.505
+                              valdeloire    2160               1279         0.408        48                   5  ...   41.606   91.263                17.249               37.760                   7.924           14.803
+                     italian_madrigals02    2160                902         0.582        48                   5  ...   39.951   97.143                20.268               48.266                   7.446           14.388
+          harmonic_itinerary_jan_2026_v4    2160               1206         0.442        48                   5  ...   38.347   91.518                15.399               34.638                   6.636           14.574
+                          hangveto_02_ep    2160               1112         0.485        48                   5  ...   41.444   89.936                17.535               38.936                   6.940           14.396
+   02_mdv_from_craft_to_sound_cremona_ep    2160               1330         0.384        48                   5  ...   36.217   91.214                15.757               33.865                   7.338           13.958
+                     renaissance_ferrara    2160               1151         0.467        48                   5  ...   35.723   92.518                17.342               38.476                   7.829           14.990
+02_final_version_cut_map_cnrs_12_01_2026    2160                995         0.539        48                   5  ...   39.233   87.120                20.013               45.862                   7.755           14.630
+           02_re_sounding_museum_cobo_ep    2160               1071         0.504        48                   5  ...   35.697   83.507                17.239               38.899                   7.036           14.398
+```
+
+### Case difficulty ranking
+
+```text
+ rank                               case_study  mean_NRS  std_NRS  failure_rate  difficulty_score difficulty_label
+    1            02_re_sounding_museum_cobo_ep    75.172    6.914         0.504             0.780             hard
+    2 02_final_version_cut_map_cnrs_12_01_2026    77.379    6.949         0.539             0.697             hard
+    3                      italian_madrigals02    83.715    7.989         0.582             0.461             hard
+    4                      renaissance_ferrara    81.141    7.585         0.467             0.435         moderate
+    5           harmonic_itinerary_jan_2026_v4    83.676    8.419         0.442             0.321         moderate
+    6                    02_georgian_poliphony    85.374    8.450         0.492             0.286         moderate
+    7                           hangveto_02_ep    82.961    6.594         0.485             0.272             easy
+    8    02_mdv_from_craft_to_sound_cremona_ep    81.406    6.945         0.384             0.264             easy
+    9                               valdeloire    83.817    6.559         0.408             0.122             easy
+```
+
+### Best configuration by case
+
+```text
+                              case_study        best_model best_input_strategy best_prompt_strategy  best_mean_NRS  best_std_NRS  best_runtime_seconds  best_parameters  best_failure_rate  n_runs
+02_final_version_cut_map_cnrs_12_01_2026 mistral-small:24b                 rag                short         87.120           0.0                 5.769            23.60                0.0       3
+                   02_georgian_poliphony        gemma2:27b                full             standard         97.540           0.0                18.476            27.20                0.0       3
+   02_mdv_from_craft_to_sound_cremona_ep       llama3.2:3b                 rag                short         91.214           0.0                 3.933             3.21                0.0       3
+           02_re_sounding_museum_cobo_ep        gemma3:27b                 rag                short         83.507           0.0                11.228            27.40                0.0       3
+                          hangveto_02_ep        gemma4:e4b                full             detailed         89.936           0.0                11.330             8.00                0.0       3
+          harmonic_itinerary_jan_2026_v4 mistral-small:24b                full                short         91.518           0.0                 5.614            23.60                0.0       3
+                     italian_madrigals02        gemma2:27b                 rag             standard         97.143           0.0                12.014            27.20                0.0       3
+                     renaissance_ferrara        gemma3:12b                full             detailed         92.518           0.0                10.451            12.20                0.0       3
+                              valdeloire         gemma3:4b                full             detailed         91.263           0.0                 7.509             4.30                0.0       3
+```
+
+### Case input-strategy deltas
+
+```text
+                              case_study best_input_strategy  best_input_NRS worst_input_strategy  worst_input_NRS  input_strategy_NRS_range  full_minus_brief_NRS  rag_minus_brief_NRS  full_minus_auto_NRS  rag_minus_auto_NRS
+                     renaissance_ferrara                 rag          83.225                brief           72.886                    10.339                10.276               10.339                0.132               0.195
+                   02_georgian_poliphony                auto          88.496                brief           78.950                     9.546                 9.489                3.859               -0.057              -5.687
+          harmonic_itinerary_jan_2026_v4                full          85.676                brief           77.925                     7.751                 7.751                7.040                0.322              -0.389
+   02_mdv_from_craft_to_sound_cremona_ep                full          83.017                brief           76.134                     6.883                 6.883                6.313                0.708               0.138
+                     italian_madrigals02                 rag          86.632                 auto           80.492                     6.140                 4.845                5.098                5.887               6.140
+           02_re_sounding_museum_cobo_ep                 rag          78.280                 auto           72.964                     5.316                 2.271                4.711                2.876               5.316
+                          hangveto_02_ep                full          84.540                brief           81.756                     2.784                 2.784                1.792                2.580               1.588
+02_final_version_cut_map_cnrs_12_01_2026                 rag          78.264                 full           76.643                     1.621                -0.829                0.792               -0.619               1.002
+                              valdeloire                auto          84.332                brief           83.198                     1.134                 0.282                0.890               -0.852              -0.244
+```
+
+### Case prompt-strategy deltas
+
+```text
+                              case_study best_prompt_strategy  best_prompt_NRS worst_prompt_strategy  worst_prompt_NRS  prompt_strategy_NRS_range  detailed_minus_short_NRS  standard_minus_short_NRS  detailed_minus_standard_NRS
+                   02_georgian_poliphony             detailed           86.215                 short            84.055                      2.160                     2.160                     1.715                        0.445
+02_final_version_cut_map_cnrs_12_01_2026             detailed           78.212                 short            76.489                      1.723                     1.723                     0.629                        1.094
+          harmonic_itinerary_jan_2026_v4             detailed           84.563                 short            82.846                      1.717                     1.717                     0.372                        1.345
+                     renaissance_ferrara             detailed           81.994                 short            80.465                      1.529                     1.529                     0.420                        1.109
+                          hangveto_02_ep             detailed           83.790                 short            82.274                      1.516                     1.516                     0.467                        1.049
+                     italian_madrigals02             detailed           84.370                 short            82.862                      1.508                     1.508                     0.760                        0.748
+                              valdeloire                short           84.576              standard            83.069                      1.507                    -0.691                    -1.507                        0.816
+   02_mdv_from_craft_to_sound_cremona_ep             detailed           81.930                 short            80.482                      1.448                     1.448                     1.119                        0.329
+           02_re_sounding_museum_cobo_ep             detailed           75.501              standard            74.664                      0.837                     0.091                    -0.746                        0.837
+```
+
+### Case model-size loss
+
+```text
+                              case_study threshold        best_model best_input_strategy best_prompt_strategy  best_mean_NRS  runtime_seconds  parameters  NRS_loss_vs_case_best
+02_final_version_cut_map_cnrs_12_01_2026      <=2B       llama3.2:1b                full                short         84.666            2.576       1.240                  2.454
+02_final_version_cut_map_cnrs_12_01_2026      <=4B       llama3.2:1b                full                short         84.666            2.576       1.240                  2.454
+02_final_version_cut_map_cnrs_12_01_2026      <=8B         gemma3:4b               brief             standard         85.040            3.843       4.300                  2.080
+02_final_version_cut_map_cnrs_12_01_2026     <=16B         gemma3:4b               brief             standard         85.040            3.843       4.300                  2.080
+02_final_version_cut_map_cnrs_12_01_2026       all mistral-small:24b                 rag                short         87.120            5.769      23.600                  0.000
+                   02_georgian_poliphony      <=2B       llama3.2:1b                auto             standard         88.147            2.043       1.240                  9.393
+                   02_georgian_poliphony      <=4B       llama3.2:3b                auto                short         91.501            3.710       3.210                  6.039
+                   02_georgian_poliphony      <=8B        gemma4:e4b                auto             detailed         94.712           11.468       8.000                  2.828
+                   02_georgian_poliphony     <=16B        gemma4:e4b                auto             detailed         94.712           11.468       8.000                  2.828
+                   02_georgian_poliphony       all        gemma2:27b                full             standard         97.540           18.476      27.200                  0.000
+   02_mdv_from_craft_to_sound_cremona_ep      <=2B       llama3.2:1b                full                short         83.741            2.757       1.240                  7.473
+   02_mdv_from_craft_to_sound_cremona_ep      <=4B       llama3.2:3b                 rag                short         91.214            3.933       3.210                  0.000
+   02_mdv_from_craft_to_sound_cremona_ep      <=8B       llama3.2:3b                 rag                short         91.214            3.933       3.210                  0.000
+   02_mdv_from_craft_to_sound_cremona_ep     <=16B       llama3.2:3b                 rag                short         91.214            3.933       3.210                  0.000
+   02_mdv_from_craft_to_sound_cremona_ep       all       llama3.2:3b                 rag                short         91.214            3.933       3.210                  0.000
+           02_re_sounding_museum_cobo_ep      <=2B        qwen3:0.6b                 rag             standard         81.372            2.156       0.752                  2.135
+           02_re_sounding_museum_cobo_ep      <=4B        qwen3:1.7b                full                short         82.265            5.062       2.030                  1.242
+           02_re_sounding_museum_cobo_ep      <=8B         gemma3:4b                 rag                short         83.477            4.015       4.300                  0.030
+           02_re_sounding_museum_cobo_ep     <=16B         gemma3:4b                 rag                short         83.477            4.015       4.300                  0.030
+           02_re_sounding_museum_cobo_ep       all        gemma3:27b                 rag                short         83.507           11.228      27.400                  0.000
+                          hangveto_02_ep      <=2B       llama3.2:1b           rag_large                short         88.366            2.042       1.240                  1.570
+                          hangveto_02_ep      <=4B       llama3.2:1b           rag_large                short         88.366            2.042       1.240                  1.570
+                          hangveto_02_ep      <=8B        gemma4:e4b                full             detailed         89.936           11.330       8.000                  0.000
+                          hangveto_02_ep     <=16B        gemma4:e4b                full             detailed         89.936           11.330       8.000                  0.000
+                          hangveto_02_ep       all        gemma4:e4b                full             detailed         89.936           11.330       8.000                  0.000
+          harmonic_itinerary_jan_2026_v4      <=2B        qwen3:0.6b                auto             detailed         87.689            1.847       0.752                  3.829
+          harmonic_itinerary_jan_2026_v4      <=4B       llama3.2:3b                full             detailed         88.709            2.637       3.210                  2.809
+          harmonic_itinerary_jan_2026_v4      <=8B         gemma3:4b                full             detailed         91.297            7.074       4.300                  0.221
+          harmonic_itinerary_jan_2026_v4     <=16B         gemma3:4b                full             detailed         91.297            7.074       4.300                  0.221
+          harmonic_itinerary_jan_2026_v4       all mistral-small:24b                full                short         91.518            5.614      23.600                  0.000
 ```
 
 ## Figures
@@ -595,6 +792,78 @@ The Pareto plot marks configurations that are not dominated on NRS, runtime, par
 ### Top Models Strategy Heatmap
 
 ![top_models_strategy_heatmap](figures/top_models/top_models_strategy_heatmap.png)
+
+### Coverage By Input Strategy
+
+![coverage_by_input_strategy](figures/coverage/coverage_by_input_strategy.png)
+
+### Coverage By Prompt Strategy
+
+![coverage_by_prompt_strategy](figures/coverage/coverage_by_prompt_strategy.png)
+
+### Coverage Vs Bertscore
+
+![coverage_vs_bertscore](figures/coverage/coverage_vs_bertscore.png)
+
+### Omission Risk By Model
+
+![omission_risk_by_model](figures/coverage/omission_risk_by_model.png)
+
+### Coverage By Case
+
+![coverage_by_case](figures/coverage/coverage_by_case.png)
+
+### Coverage Adjusted Score By Configuration
+
+![coverage_adjusted_score_by_configuration](figures/coverage/coverage_adjusted_score_by_configuration.png)
+
+### Support Vs Coverage
+
+![support_vs_coverage](figures/coverage/support_vs_coverage.png)
+
+### Case Mean Nrs
+
+![case_mean_nrs](figures/case_studies/case_mean_nrs.png)
+
+### Case Failure Rate
+
+![case_failure_rate](figures/case_studies/case_failure_rate.png)
+
+### Case Runtime
+
+![case_runtime](figures/case_studies/case_runtime.png)
+
+### Case Difficulty Ranking
+
+![case_difficulty_ranking](figures/case_studies/case_difficulty_ranking.png)
+
+### Case Input Strategy Heatmap
+
+![case_input_strategy_heatmap](figures/case_studies/case_input_strategy_heatmap.png)
+
+### Case Prompt Strategy Heatmap
+
+![case_prompt_strategy_heatmap](figures/case_studies/case_prompt_strategy_heatmap.png)
+
+### Case Input Strategy Gain
+
+![case_input_strategy_gain](figures/case_studies/case_input_strategy_gain.png)
+
+### Case Prompt Strategy Gain
+
+![case_prompt_strategy_gain](figures/case_studies/case_prompt_strategy_gain.png)
+
+### Case Size Threshold Loss
+
+![case_size_threshold_loss](figures/case_studies/case_size_threshold_loss.png)
+
+### Case Nrs Runtime Scatter
+
+![case_nrs_runtime_scatter](figures/case_studies/case_nrs_runtime_scatter.png)
+
+### Case Stability
+
+![case_stability](figures/case_studies/case_stability.png)
 
 ## Critical discussion
 

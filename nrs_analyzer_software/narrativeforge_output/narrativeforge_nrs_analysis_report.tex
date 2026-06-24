@@ -92,4 +92,25 @@ rank & model & input\_strategy & prompt\_strategy & mean\_NRS & runtime\_seconds
 BERTScore F1 and sentence-transformer semantic similarity were used as automatic semantic-alignment indicators between the generated narrative and the source document. They estimate whether the generated text preserves the meaning of the source at a global semantic level. However, because the comparison is performed between the complete generated narrative and the complete source document, these metrics may overestimate quality when the source is much longer than the generated narrative: a text can remain topically similar while omitting important facts, causal relations, or local details. Consequently, these measures do not replace expert factual validation, claim-level checking, or human evaluation of narrative faithfulness.
 
 
+The highest mean source coverage@0.75 is observed for input strategy rag\_large (0.106).
+
+
+The largest mean omission risk@0.75 is observed for mistral-nemo:12b (0.808), indicating possible global similarity without broad source coverage.
+
+
+There are 4324 high-alignment/low-coverage cases with BERTScore F1 >= 0.85 and source coverage@0.75 <= 0.50.
+
+
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+input\_strategy & mean\_bertscore\_f1 & mean\_semantic\_similarity & mean\_source\_coverage\_075 & mean\_generation\_support\_075 & mean\_compression\_ratio & mean\_entity\_coverage & mean\_keyphrase\_coverage & mean\_coverage\_adjusted\_bertscore\_075 & mean\_coverage\_adjusted\_semantic\_similarity\_075 & mean\_omission\_risk\_075 & n\_runs & failure\_rate \\
+\midrule
+auto & 0.843 & 0.746 & 0.072 & 0.380 & 0.153 & NaN & 0.073 & 0.061 & 0.057 & 0.772 & 2201 & 0.434 \\
+brief & 0.828 & 0.670 & 0.031 & 0.212 & 0.140 & NaN & 0.046 & 0.026 & 0.022 & 0.798 & 2121 & 0.454 \\
+full & 0.850 & 0.764 & NaN & NaN & 0.000 & NaN & 0.000 & NaN & NaN & NaN & 2371 & 0.390 \\
+rag & 0.848 & 0.756 & 0.082 & 0.440 & 0.154 & NaN & 0.063 & 0.070 & 0.064 & 0.766 & 2225 & 0.428 \\
+rag\_large & 0.854 & 0.799 & 0.106 & 0.494 & 0.207 & NaN & 0.106 & 0.091 & 0.086 & 0.747 & 1225 & 0.685 \\
+\bottomrule
+\end{tabular}
+
 \end{document}

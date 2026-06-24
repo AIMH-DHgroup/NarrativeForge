@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .case_study import case_study_tables
 from .coverage import CoverageOptions, apply_coverage_diagnostics, has_coverage_metrics
 from .io import load_runs, make_bundle, write_dataframe_tables
 from .plotting import create_all_figures
@@ -43,6 +44,8 @@ class AnalysisOptions:
     coverage_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     skip_entity_coverage: bool = False
     skip_keyphrase_coverage: bool = False
+    recompute_coverage: bool = False
+    case_detail_plots: bool = False
     title: str = "NarrativeForge NRS Benchmark Analysis"
     hardware_note: str = (
         "Runtime values are benchmark runtimes on the machine used for the experiment. "
@@ -507,6 +510,7 @@ def make_tables(df: pd.DataFrame, options: AnalysisOptions) -> dict[str, pd.Data
     coverage_by_case = _coverage_summary(df.copy(), ["case_id"] if "case_id" in df.columns else ["source_file"])
     coverage_by_model_family = _coverage_summary(df.copy(), ["family"])
     high_alignment_low_coverage_cases = _high_alignment_low_coverage_cases(df)
+    case_tables, _case_column = case_study_tables(df)
     pareto = pareto_frontier(configuration_summary)
     quality_loss = _quality_loss_table(configuration_summary, options)
     best_tradeoff = _best_tradeoff_table(configuration_summary, options)
@@ -514,7 +518,7 @@ def make_tables(df: pd.DataFrame, options: AnalysisOptions) -> dict[str, pd.Data
 
     correlation_summary_table = pd.DataFrame([correlation_summary])
 
-    return {
+    tables = {
         "descriptive_statistics": descriptive,
         "input_strategy_summary": input_summary,
         "prompt_strategy_summary": prompt_summary,
@@ -544,6 +548,8 @@ def make_tables(df: pd.DataFrame, options: AnalysisOptions) -> dict[str, pd.Data
         "parameter_correlations_by_input_strategy": parameter_correlations_by_input,
         "parameter_correlation_summary": correlation_summary_table,
     }
+    tables.update(case_tables)
+    return tables
 
 
 def _make_summary(df: pd.DataFrame, tables: dict[str, pd.DataFrame], options: AnalysisOptions, metadata: dict) -> dict[str, Any]:
@@ -570,6 +576,7 @@ def _make_summary(df: pd.DataFrame, tables: dict[str, pd.DataFrame], options: An
         "best_tradeoffs": tables.get("best_tradeoff_configurations", pd.DataFrame()).to_dict(orient="records"),
         "pareto_configuration_count": int(len(tables.get("pareto_optimal_configurations", pd.DataFrame()))),
         "configuration_count": int(len(config)),
+        "case_study_analysis_available": "case_study_summary" in tables,
     }
     if not tradeoff.empty:
         summary["global_best_configuration"] = tradeoff.sort_values(
@@ -606,8 +613,10 @@ def run_analysis(source: str | Path, output_dir: str | Path, options: AnalysisOp
             model=options.coverage_model,
             skip_entity_coverage=options.skip_entity_coverage,
             skip_keyphrase_coverage=options.skip_keyphrase_coverage,
+            recompute=options.recompute_coverage,
         ),
         tables_dir,
+        output_dir,
     )
     df = coverage_result.df
 
@@ -615,6 +624,12 @@ def run_analysis(source: str | Path, output_dir: str | Path, options: AnalysisOp
     df.to_csv(combined_path, index=False)
 
     tables = make_tables(df, options)
+    if "case_study_summary" not in tables:
+        (tables_dir / "case_study_analysis_unavailable.txt").write_text(
+            "Case-study analysis was skipped because no case-study identifier column was found. "
+            "Accepted columns: case_id, case_name, case, story_id, scenario_id, benchmark_case.\n",
+            encoding="utf-8",
+        )
     written_tables = write_dataframe_tables(tables, tables_dir)
     figure_paths, figure_interpretations = create_all_figures(df, tables, figures_dir, options)
 
@@ -623,7 +638,14 @@ def run_analysis(source: str | Path, output_dir: str | Path, options: AnalysisOp
     summary["tables"] = written_tables
     summary["figures"] = {k: str(v) for k, v in figure_paths.items()}
     summary["figure_interpretations"] = figure_interpretations
-    summary["coverage_diagnostics"] = {"available": coverage_result.available, "warnings": coverage_result.warnings}
+    summary["coverage_diagnostics"] = {
+        "available": coverage_result.available,
+        "warnings": coverage_result.warnings,
+        "cache_path": str(coverage_result.cache_path) if coverage_result.cache_path else None,
+        "cache_status": coverage_result.cache_status,
+        "computed_rows": coverage_result.computed_rows,
+        "cached_rows": coverage_result.cached_rows,
+    }
 
     summary_path = output_dir / "analysis_summary.json"
     with open(summary_path, "w", encoding="utf-8") as f:

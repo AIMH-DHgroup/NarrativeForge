@@ -190,7 +190,15 @@ def write_dataframe_tables(tables: dict[str, pd.DataFrame], tables_dir: Path) ->
         path = tables_dir / f"{name}.csv"
         table.to_csv(path, index=False)
         written[name] = str(path)
-        if name in {"model_strategy_matrix", "model_family_summary", "top5_configurations"}:
+        if name in {
+            "model_strategy_matrix",
+            "model_family_summary",
+            "top5_configurations",
+            "case_study_summary",
+            "best_configuration_by_case",
+            "case_difficulty_ranking",
+            "case_model_size_summary",
+        }:
             tex_path = tables_dir / f"{name}.tex"
             table.to_latex(tex_path, index=False, float_format="%.3f", escape=True)
             written[f"{name}_tex"] = str(tex_path)

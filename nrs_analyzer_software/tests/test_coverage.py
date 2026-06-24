@@ -86,3 +86,30 @@ def test_omission_risk_and_aggregation_tables(tmp_path):
     tables = make_tables(result.df, AnalysisOptions())
     assert math.isclose(float(result.df["omission_risk_075"].iloc[0]), 0.4)
     assert not tables["coverage_by_input_strategy"].empty
+
+
+def test_coverage_cache_reuse_without_recompute(tmp_path):
+    df = pd.DataFrame(
+        {
+            "source_text": ["Alpha source sentence."],
+            "generated_text": ["Alpha source sentence."],
+            "NRS": [80.0],
+            "bertscore_f1": [0.9],
+            "semantic_similarity": [0.8],
+            "runtime_seconds": [1.0],
+            "failed": [False],
+            "success": [True],
+            "model": ["gemma3:4b"],
+            "input_strategy": ["brief"],
+            "prompt_strategy": ["standard"],
+            "run": ["1"],
+            "case_id": ["case1"],
+        }
+    )
+    options = CoverageOptions(skip_entity_coverage=True, skip_keyphrase_coverage=True)
+    first = apply_coverage_diagnostics(df, options, tmp_path / "tables", tmp_path)
+    second = apply_coverage_diagnostics(df, options, tmp_path / "tables", tmp_path)
+    assert (tmp_path / "coverage_metrics.csv").exists()
+    assert first.computed_rows == 1
+    assert second.computed_rows == 0
+    assert second.cached_rows == 1

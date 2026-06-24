@@ -297,6 +297,146 @@ def _plot_coverage_figures(df: pd.DataFrame, tables: dict[str, pd.DataFrame], fi
     return figures
 
 
+def _plot_case_study_figures(tables: dict[str, pd.DataFrame], figures_dir: Path, options) -> dict[str, Path]:
+    figures: dict[str, Path] = {}
+    summary = tables.get("case_study_summary", pd.DataFrame()).copy()
+    if summary.empty:
+        return figures
+    case_dir = figures_dir / "case_studies"
+
+    def bar(table: pd.DataFrame, x: str, y: str, key: str, title: str, ylabel: str, ascending: bool = False):
+        if table.empty or x not in table.columns or y not in table.columns:
+            return
+        plot = table.dropna(subset=[y]).sort_values(y, ascending=ascending)
+        fig, ax = plt.subplots(figsize=(max(7.5, 0.32 * len(plot)), 5.0))
+        ax.bar(plot[x].astype(str), plot[y])
+        ax.set_title(title)
+        ax.set_ylabel(ylabel)
+        ax.tick_params(axis="x", labelrotation=70)
+        _grid(ax)
+        figures[key] = _save(fig, case_dir, key, options.figure_format)
+
+    bar(summary, "case_study", "mean_NRS", "case_mean_nrs", "Case-study mean NRS", "Mean NRS", ascending=False)
+    bar(summary, "case_study", "failure_rate", "case_failure_rate", "Case-study failure rate", "Failure rate", ascending=False)
+    bar(summary, "case_study", "mean_runtime_seconds", "case_runtime", "Case-study runtime", "Mean runtime (seconds)", ascending=False)
+
+    difficulty = tables.get("case_difficulty_ranking", pd.DataFrame()).copy()
+    if not difficulty.empty:
+        bar(difficulty, "case_study", "difficulty_score", "case_difficulty_ranking", "Case-study difficulty ranking", "Difficulty score", ascending=False)
+
+    def heatmap(table_key: str, key: str, title: str):
+        table = tables.get(table_key, pd.DataFrame()).copy()
+        if table.empty or "case_study" not in table.columns:
+            return
+        plot = table.set_index("case_study")
+        fig, ax = plt.subplots(figsize=(7.5, max(4.8, 0.34 * len(plot))))
+        image = ax.imshow(np.ma.masked_invalid(plot.to_numpy(dtype=float)), aspect="auto")
+        ax.set_xticks(np.arange(len(plot.columns)))
+        ax.set_xticklabels(plot.columns)
+        ax.set_yticks(np.arange(len(plot.index)))
+        ax.set_yticklabels(plot.index)
+        ax.set_title(title)
+        fig.colorbar(image, ax=ax, label="Mean NRS")
+        figures[key] = _save(fig, case_dir, key, options.figure_format)
+
+    heatmap("case_by_input_strategy_nrs", "case_input_strategy_heatmap", "Case x input strategy NRS")
+    heatmap("case_by_prompt_strategy_nrs", "case_prompt_strategy_heatmap", "Case x prompt strategy NRS")
+    bar(tables.get("case_input_strategy_delta", pd.DataFrame()), "case_study", "input_strategy_NRS_range", "case_input_strategy_gain", "Input-strategy NRS range by case", "NRS range", ascending=False)
+    bar(tables.get("case_prompt_strategy_delta", pd.DataFrame()), "case_study", "prompt_strategy_NRS_range", "case_prompt_strategy_gain", "Prompt-strategy NRS range by case", "NRS range", ascending=False)
+
+    loss = tables.get("case_model_size_loss", pd.DataFrame()).copy()
+    if not loss.empty and {"case_study", "threshold", "NRS_loss_vs_case_best"}.issubset(loss.columns):
+        pivot = loss.pivot_table(index="case_study", columns="threshold", values="NRS_loss_vs_case_best", aggfunc="mean", observed=False)
+        fig, ax = plt.subplots(figsize=(max(8.0, 0.38 * len(pivot)), 5.2))
+        pivot.plot(kind="bar", ax=ax)
+        ax.set_title("Case quality loss under model-size thresholds")
+        ax.set_ylabel("NRS loss vs case best")
+        ax.tick_params(axis="x", labelrotation=70)
+        _grid(ax)
+        figures["case_size_threshold_loss"] = _save(fig, case_dir, "case_size_threshold_loss", options.figure_format)
+
+    if {"mean_runtime_seconds", "mean_NRS", "failure_rate", "case_study"}.issubset(summary.columns):
+        plot = summary.dropna(subset=["mean_runtime_seconds", "mean_NRS"])
+        fig, ax = plt.subplots(figsize=(7.2, 5.2))
+        sizes = _bubble_sizes(plot["failure_rate"], min_size=40, max_size=260)
+        ax.scatter(plot["mean_runtime_seconds"], plot["mean_NRS"], s=sizes, alpha=0.7)
+        for _, row in plot.iterrows():
+            ax.annotate(str(row["case_study"]), (row["mean_runtime_seconds"], row["mean_NRS"]), fontsize=7, xytext=(4, 4), textcoords="offset points")
+        ax.set_title("Case NRS vs runtime")
+        ax.set_xlabel("Mean runtime (seconds)")
+        ax.set_ylabel("Mean NRS")
+        _grid(ax)
+        figures["case_nrs_runtime_scatter"] = _save(fig, case_dir, "case_nrs_runtime_scatter", options.figure_format)
+
+    stability = tables.get("case_stability_summary", pd.DataFrame()).copy()
+    if not stability.empty and {"std_NRS", "mean_NRS", "failure_rate", "case_study"}.issubset(stability.columns):
+        plot = stability.dropna(subset=["std_NRS", "mean_NRS"])
+        fig, ax = plt.subplots(figsize=(7.2, 5.2))
+        sizes = _bubble_sizes(plot["failure_rate"], min_size=40, max_size=260)
+        ax.scatter(plot["std_NRS"], plot["mean_NRS"], s=sizes, alpha=0.7)
+        for _, row in plot.iterrows():
+            ax.annotate(str(row["case_study"]), (row["std_NRS"], row["mean_NRS"]), fontsize=7, xytext=(4, 4), textcoords="offset points")
+        ax.set_title("Case stability: NRS variance vs quality")
+        ax.set_xlabel("NRS standard deviation")
+        ax.set_ylabel("Mean NRS")
+        _grid(ax)
+        figures["case_stability"] = _save(fig, case_dir, "case_stability", options.figure_format)
+
+    if getattr(options, "case_detail_plots", False):
+        _plot_per_case_details(tables, case_dir, options, figures)
+    return figures
+
+
+def _plot_per_case_details(tables: dict[str, pd.DataFrame], case_dir: Path, options, figures: dict[str, Path]) -> None:
+    case_summary = tables.get("case_study_summary", pd.DataFrame())
+    if case_summary.empty:
+        return
+    input_table = tables.get("case_by_input_strategy_nrs", pd.DataFrame())
+    prompt_table = tables.get("case_by_prompt_strategy_nrs", pd.DataFrame())
+    top5 = tables.get("top5_configurations_by_case", pd.DataFrame())
+    config = tables.get("configuration_summary_with_efficiency", pd.DataFrame())
+    for case in case_summary["case_study"].astype(str):
+        outdir = case_dir / "per_case" / _clean_filename(case)
+        row = input_table[input_table["case_study"].astype(str) == case] if not input_table.empty else pd.DataFrame()
+        if not row.empty:
+            plot = row.drop(columns=["case_study"]).T.reset_index()
+            plot.columns = ["input_strategy", "mean_NRS"]
+            fig, ax = plt.subplots(figsize=(5.8, 4.0))
+            ax.bar(plot["input_strategy"], plot["mean_NRS"])
+            ax.set_title(f"{case}: NRS by input")
+            _grid(ax)
+            figures[f"case_{_clean_filename(case)}_input_strategy_nrs"] = _save(fig, outdir, "input_strategy_nrs", options.figure_format)
+        row = prompt_table[prompt_table["case_study"].astype(str) == case] if not prompt_table.empty else pd.DataFrame()
+        if not row.empty:
+            plot = row.drop(columns=["case_study"]).T.reset_index()
+            plot.columns = ["prompt_strategy", "mean_NRS"]
+            fig, ax = plt.subplots(figsize=(5.8, 4.0))
+            ax.bar(plot["prompt_strategy"], plot["mean_NRS"])
+            ax.set_title(f"{case}: NRS by prompt")
+            _grid(ax)
+            figures[f"case_{_clean_filename(case)}_prompt_strategy_nrs"] = _save(fig, outdir, "prompt_strategy_nrs", options.figure_format)
+        subset = top5[top5["case_study"].astype(str) == case] if not top5.empty else pd.DataFrame()
+        if not subset.empty:
+            fig, ax = plt.subplots(figsize=(6.5, 4.2))
+            ax.bar(subset["model"].astype(str), subset["mean_NRS"])
+            ax.set_title(f"{case}: top models/configurations")
+            ax.tick_params(axis="x", labelrotation=45)
+            _grid(ax)
+            figures[f"case_{_clean_filename(case)}_top_models_nrs"] = _save(fig, outdir, "top_models_nrs", options.figure_format)
+        subset = config[config.get("case_study", pd.Series(dtype=str)).astype(str) == case] if "case_study" in config.columns else pd.DataFrame()
+        if subset.empty:
+            subset = top5[top5["case_study"].astype(str) == case] if not top5.empty else pd.DataFrame()
+        if not subset.empty:
+            fig, ax = plt.subplots(figsize=(6.5, 4.2))
+            runtime_col = "mean_runtime_seconds" if "mean_runtime_seconds" in subset.columns else "runtime_seconds"
+            ax.scatter(subset[runtime_col], subset["mean_NRS"], alpha=0.65)
+            ax.set_title(f"{case}: NRS vs runtime")
+            ax.set_xlabel("Runtime (seconds)")
+            ax.set_ylabel("Mean NRS")
+            _grid(ax)
+            figures[f"case_{_clean_filename(case)}_nrs_runtime_by_configuration"] = _save(fig, outdir, "nrs_runtime_by_configuration", options.figure_format)
+
+
 def create_all_figures(df: pd.DataFrame, tables: dict[str, pd.DataFrame], figures_dir: Path, options) -> tuple[dict[str, Path], list[dict[str, Any]]]:
     _setup(options.dpi)
     figures: dict[str, Path] = {}
@@ -509,6 +649,7 @@ def create_all_figures(df: pd.DataFrame, tables: dict[str, pd.DataFrame], figure
     figures.update(_plot_top5_figures(tables, figures_dir, options))
     figures.update(_plot_top_model_figures(tables, figures_dir, options))
     figures.update(_plot_coverage_figures(df, tables, figures_dir, options))
+    figures.update(_plot_case_study_figures(tables, figures_dir, options))
 
     interpretations = _figure_interpretations(tables)
     return figures, interpretations

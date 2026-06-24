@@ -42,8 +42,17 @@
         Infinity
       ]
     ],
-    "dpi": 220,
+    "dpi": 300,
     "figure_format": "png",
+    "coverage": false,
+    "coverage_thresholds": [
+      0.7,
+      0.75,
+      0.8
+    ],
+    "coverage_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "skip_entity_coverage": false,
+    "skip_keyphrase_coverage": false,
     "title": "NarrativeForge NRS Benchmark Analysis",
     "hardware_note": "Runtime values are benchmark runtimes on the machine used for the experiment. They should be interpreted comparatively unless the target deployment hardware is similar."
   },
@@ -156,6 +165,7 @@
   },
   "best_model": {
     "model": "gemma3:4b",
+    "family": "gemma3",
     "parameters_b": 4.3,
     "attempts": 405,
     "mean_NRS": 81.83642962962963,
@@ -177,6 +187,7 @@
     {
       "criterion": "best raw quality",
       "model": "gemma3:12b",
+      "family": "gemma3",
       "input_strategy": "full",
       "prompt_strategy": "detailed",
       "parameters_b": 12.2,
@@ -205,6 +216,7 @@
     {
       "criterion": "best balanced score",
       "model": "qwen3:0.6b",
+      "family": "qwen3",
       "input_strategy": "rag",
       "prompt_strategy": "detailed",
       "parameters_b": 0.752,
@@ -233,6 +245,7 @@
     {
       "criterion": "best reliable balanced score",
       "model": "gemma3:1b",
+      "family": "gemma3",
       "input_strategy": "brief",
       "prompt_strategy": "standard",
       "parameters_b": 0.999,
@@ -261,6 +274,7 @@
     {
       "criterion": "best quality per second",
       "model": "cogito:3b",
+      "family": "cogito",
       "input_strategy": "rag_large",
       "prompt_strategy": "short",
       "parameters_b": 3.61,
@@ -289,6 +303,7 @@
     {
       "criterion": "best quality per billion parameters",
       "model": "qwen3:0.6b",
+      "family": "qwen3",
       "input_strategy": "auto",
       "prompt_strategy": "detailed",
       "parameters_b": 0.752,
@@ -317,6 +332,7 @@
     {
       "criterion": "best quality per parameter-second",
       "model": "qwen3:0.6b",
+      "family": "qwen3",
       "input_strategy": "auto",
       "prompt_strategy": "short",
       "parameters_b": 0.752,
@@ -347,6 +363,7 @@
   "configuration_count": 720,
   "global_best_configuration": {
     "model": "gemma3:12b",
+    "family": "gemma3",
     "input_strategy": "full",
     "prompt_strategy": "detailed",
     "parameters_b": 12.2,
@@ -374,6 +391,7 @@
   },
   "balanced_best_configuration": {
     "model": "qwen3:0.6b",
+    "family": "qwen3",
     "input_strategy": "rag",
     "prompt_strategy": "detailed",
     "parameters_b": 0.752,
@@ -412,6 +430,21 @@
     "model_by_prompt_pivot_mean_NRS": "narrativeforge_output\\tables\\model_by_prompt_pivot_mean_NRS.csv",
     "size_bin_summary": "narrativeforge_output\\tables\\size_bin_summary.csv",
     "configuration_summary_with_efficiency": "narrativeforge_output\\tables\\configuration_summary_with_efficiency.csv",
+    "model_strategy_matrix": "narrativeforge_output\\tables\\model_strategy_matrix.csv",
+    "model_strategy_matrix_tex": "narrativeforge_output\\tables\\model_strategy_matrix.tex",
+    "model_strategy_prompt_matrix": "narrativeforge_output\\tables\\model_strategy_prompt_matrix.csv",
+    "model_family_summary": "narrativeforge_output\\tables\\model_family_summary.csv",
+    "model_family_summary_tex": "narrativeforge_output\\tables\\model_family_summary.tex",
+    "top5_configurations": "narrativeforge_output\\tables\\top5_configurations.csv",
+    "top5_configurations_tex": "narrativeforge_output\\tables\\top5_configurations.tex",
+    "top_models_strategy_matrix": "narrativeforge_output\\tables\\top_models_strategy_matrix.csv",
+    "coverage_by_input_strategy": "narrativeforge_output\\tables\\coverage_by_input_strategy.csv",
+    "coverage_by_prompt_strategy": "narrativeforge_output\\tables\\coverage_by_prompt_strategy.csv",
+    "coverage_by_model": "narrativeforge_output\\tables\\coverage_by_model.csv",
+    "coverage_by_model_strategy_prompt": "narrativeforge_output\\tables\\coverage_by_model_strategy_prompt.csv",
+    "coverage_by_case": "narrativeforge_output\\tables\\coverage_by_case.csv",
+    "coverage_by_model_family": "narrativeforge_output\\tables\\coverage_by_model_family.csv",
+    "high_alignment_low_coverage_cases": "narrativeforge_output\\tables\\high_alignment_low_coverage_cases.csv",
     "quality_loss_by_parameter_threshold": "narrativeforge_output\\tables\\quality_loss_by_parameter_threshold.csv",
     "best_tradeoff_configurations": "narrativeforge_output\\tables\\best_tradeoff_configurations.csv",
     "pareto_optimal_configurations": "narrativeforge_output\\tables\\pareto_optimal_configurations.csv",
@@ -429,7 +462,58 @@
     "08_nrs_vs_parameters_bubble_runtime": "narrativeforge_output\\figures\\08_nrs_vs_parameters_bubble_runtime.png",
     "09_top_balanced_configurations": "narrativeforge_output\\figures\\09_top_balanced_configurations.png",
     "10_quality_loss_vs_parameter_threshold": "narrativeforge_output\\figures\\10_quality_loss_vs_parameter_threshold.png",
-    "11_pareto_frontier": "narrativeforge_output\\figures\\11_pareto_frontier.png"
+    "11_pareto_frontier": "narrativeforge_output\\figures\\11_pareto_frontier.png",
+    "family_cogito_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\cogito_scaling_nrs.png",
+    "family_cogito_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\cogito_scaling_runtime.png",
+    "family_cogito_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\cogito_quality_efficiency.png",
+    "family_deepseek_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\deepseek_scaling_nrs.png",
+    "family_deepseek_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\deepseek_scaling_runtime.png",
+    "family_deepseek_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\deepseek_quality_efficiency.png",
+    "family_gemma2_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\gemma2_scaling_nrs.png",
+    "family_gemma2_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\gemma2_scaling_runtime.png",
+    "family_gemma2_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\gemma2_quality_efficiency.png",
+    "family_gemma3_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\gemma3_scaling_nrs.png",
+    "family_gemma3_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\gemma3_scaling_runtime.png",
+    "family_gemma3_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\gemma3_quality_efficiency.png",
+    "family_gemma4_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\gemma4_scaling_nrs.png",
+    "family_gemma4_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\gemma4_scaling_runtime.png",
+    "family_gemma4_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\gemma4_quality_efficiency.png",
+    "family_granite_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\granite_scaling_nrs.png",
+    "family_granite_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\granite_scaling_runtime.png",
+    "family_granite_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\granite_quality_efficiency.png",
+    "family_llama_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\llama_scaling_nrs.png",
+    "family_llama_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\llama_scaling_runtime.png",
+    "family_llama_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\llama_quality_efficiency.png",
+    "family_mistral_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\mistral_scaling_nrs.png",
+    "family_mistral_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\mistral_scaling_runtime.png",
+    "family_mistral_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\mistral_quality_efficiency.png",
+    "family_phi_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\phi_scaling_nrs.png",
+    "family_phi_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\phi_scaling_runtime.png",
+    "family_phi_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\phi_quality_efficiency.png",
+    "family_qwen2.5_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\qwen2.5_scaling_nrs.png",
+    "family_qwen2.5_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\qwen2.5_scaling_runtime.png",
+    "family_qwen2.5_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\qwen2.5_quality_efficiency.png",
+    "family_qwen3_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\qwen3_scaling_nrs.png",
+    "family_qwen3_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\qwen3_scaling_runtime.png",
+    "family_qwen3_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\qwen3_quality_efficiency.png",
+    "family_qwen3.5_scaling_nrs": "narrativeforge_output\\figures\\family_scaling\\qwen3.5_scaling_nrs.png",
+    "family_qwen3.5_scaling_runtime": "narrativeforge_output\\figures\\family_scaling\\qwen3.5_scaling_runtime.png",
+    "family_qwen3.5_quality_efficiency": "narrativeforge_output\\figures\\family_scaling\\qwen3.5_quality_efficiency.png",
+    "top5_nrs_bar": "narrativeforge_output\\figures\\top5\\top5_nrs_bar.png",
+    "top5_runtime_bar": "narrativeforge_output\\figures\\top5\\top5_runtime_bar.png",
+    "top5_nrs_runtime_scatter": "narrativeforge_output\\figures\\top5\\top5_nrs_runtime_scatter.png",
+    "top5_radar": "narrativeforge_output\\figures\\top5\\top5_radar.png",
+    "top_models_nrs": "narrativeforge_output\\figures\\top_models\\top_models_nrs.png",
+    "top_models_runtime": "narrativeforge_output\\figures\\top_models\\top_models_runtime.png",
+    "top_models_failure": "narrativeforge_output\\figures\\top_models\\top_models_failure.png",
+    "top_models_strategy_heatmap": "narrativeforge_output\\figures\\top_models\\top_models_strategy_heatmap.png",
+    "coverage_by_input_strategy": "narrativeforge_output\\figures\\coverage\\coverage_by_input_strategy.png",
+    "coverage_by_prompt_strategy": "narrativeforge_output\\figures\\coverage\\coverage_by_prompt_strategy.png",
+    "coverage_vs_bertscore": "narrativeforge_output\\figures\\coverage\\coverage_vs_bertscore.png",
+    "omission_risk_by_model": "narrativeforge_output\\figures\\coverage\\omission_risk_by_model.png",
+    "coverage_by_case": "narrativeforge_output\\figures\\coverage\\coverage_by_case.png",
+    "coverage_adjusted_score_by_configuration": "narrativeforge_output\\figures\\coverage\\coverage_adjusted_score_by_configuration.png",
+    "support_vs_coverage": "narrativeforge_output\\figures\\coverage\\support_vs_coverage.png"
   },
   "figure_interpretations": [
     {
@@ -487,5 +571,11 @@
       "title": "Pareto frontier plot",
       "interpretation": "The Pareto plot marks configurations that are not dominated on NRS, runtime, parameters, and failure rate. There are 33 Pareto-optimal configurations. These are the most rational candidates for retesting and deployment evaluation."
     }
-  ]
+  ],
+  "coverage_diagnostics": {
+    "available": true,
+    "warnings": [
+      "spaCy model en_core_web_sm is unavailable; entity coverage is skipped because blank spaCy has no NER pipeline."
+    ]
+  }
 }

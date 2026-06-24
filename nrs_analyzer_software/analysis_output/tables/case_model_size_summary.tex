@@ -1,0 +1,51 @@
+\begin{tabular}{llrrrrrlr}
+\toprule
+case\_study & parameter\_bucket & n\_runs & failure\_rate & mean\_NRS & std\_NRS & mean\_runtime\_seconds & best\_model\_in\_bucket & best\_mean\_NRS\_in\_bucket \\
+\midrule
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=16B & 675 & 0.524 & 77.991 & 6.570 & 14.631 & gemma2:9b & 84.735 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=2B & 180 & 0.683 & 73.145 & 7.775 & 3.375 & llama3.2:1b & 84.666 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=4B & 360 & 0.639 & 73.998 & 8.519 & 6.380 & qwen3:1.7b & 83.318 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=8B & 360 & 0.511 & 77.951 & 6.548 & 11.988 & gemma3:4b & 85.040 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & >16B & 585 & 0.468 & 78.613 & 5.897 & 38.859 & mistral-small:24b & 87.120 \\
+02\_georgian\_poliphony & <=16B & 675 & 0.489 & 85.898 & 7.475 & 13.409 & gemma3:12b & 94.151 \\
+02\_georgian\_poliphony & <=2B & 180 & 0.783 & 79.483 & 8.709 & 3.269 & llama3.2:1b & 88.147 \\
+02\_georgian\_poliphony & <=4B & 360 & 0.644 & 80.974 & 10.336 & 5.597 & llama3.2:3b & 91.501 \\
+02\_georgian\_poliphony & <=8B & 360 & 0.433 & 87.058 & 6.637 & 9.238 & gemma4:e4b & 94.712 \\
+02\_georgian\_poliphony & >16B & 585 & 0.349 & 86.078 & 8.730 & 31.805 & gemma2:27b & 97.540 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=16B & 675 & 0.359 & 81.773 & 7.072 & 10.569 & phi4:14b & 88.986 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=2B & 180 & 0.667 & 78.241 & 3.307 & 3.016 & llama3.2:1b & 83.741 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=4B & 360 & 0.478 & 79.415 & 6.749 & 5.034 & llama3.2:3b & 91.214 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=8B & 360 & 0.272 & 81.970 & 7.204 & 8.574 & gemma4:e2b & 88.823 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & >16B & 585 & 0.338 & 82.072 & 6.851 & 33.610 & gemma4:31b & 89.180 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=16B & 675 & 0.490 & 75.359 & 6.762 & 10.943 & gemma4:12b & 82.202 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=2B & 180 & 0.750 & 70.983 & 8.404 & 3.607 & qwen3:0.6b & 81.372 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=4B & 360 & 0.561 & 74.286 & 7.730 & 5.406 & qwen3:1.7b & 82.265 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=8B & 360 & 0.461 & 75.793 & 6.843 & 9.797 & gemma3:4b & 83.477 \\
+02\_re\_sounding\_museum\_cobo\_ep & >16B & 585 & 0.436 & 75.606 & 6.258 & 35.700 & gemma3:27b & 83.507 \\
+hangveto\_02\_ep & <=16B & 675 & 0.467 & 83.726 & 4.845 & 10.810 & gemma3:12b & 89.410 \\
+hangveto\_02\_ep & <=2B & 180 & 0.706 & 81.680 & 4.449 & 2.771 & llama3.2:1b & 88.366 \\
+hangveto\_02\_ep & <=4B & 360 & 0.575 & 80.603 & 8.215 & 7.306 & qwen3:1.7b & 86.603 \\
+hangveto\_02\_ep & <=8B & 360 & 0.431 & 82.818 & 7.889 & 12.516 & gemma4:e4b & 89.936 \\
+hangveto\_02\_ep & >16B & 585 & 0.417 & 83.495 & 6.563 & 34.535 & gemma4:26b & 89.179 \\
+harmonic\_itinerary\_jan\_2026\_v4 & <=16B & 675 & 0.467 & 83.706 & 8.554 & 10.783 & qwen3.5:9b & 91.263 \\
+harmonic\_itinerary\_jan\_2026\_v4 & <=2B & 180 & 0.717 & 78.100 & 7.983 & 2.805 & qwen3:0.6b & 87.689 \\
+harmonic\_itinerary\_jan\_2026\_v4 & <=4B & 360 & 0.539 & 81.504 & 8.861 & 4.908 & llama3.2:3b & 88.709 \\
+harmonic\_itinerary\_jan\_2026\_v4 & <=8B & 360 & 0.317 & 84.332 & 7.767 & 8.408 & gemma3:4b & 91.297 \\
+harmonic\_itinerary\_jan\_2026\_v4 & >16B & 585 & 0.345 & 84.911 & 8.115 & 30.452 & mistral-small:24b & 91.518 \\
+italian\_madrigals02 & <=16B & 675 & 0.590 & 84.598 & 7.165 & 11.656 & gemma2:9b & 96.169 \\
+italian\_madrigals02 & <=2B & 180 & 0.733 & 80.874 & 6.981 & 3.030 & gemma3:1b & 86.182 \\
+italian\_madrigals02 & <=4B & 360 & 0.664 & 81.219 & 9.914 & 7.371 & qwen3:1.7b & 89.059 \\
+italian\_madrigals02 & <=8B & 360 & 0.528 & 84.926 & 6.866 & 13.066 & gemma4:e4b & 92.945 \\
+italian\_madrigals02 & >16B & 585 & 0.511 & 83.672 & 8.310 & 41.241 & gemma2:27b & 97.143 \\
+renaissance\_ferrara & <=16B & 675 & 0.459 & 82.240 & 6.306 & 9.791 & gemma3:12b & 92.518 \\
+renaissance\_ferrara & <=2B & 180 & 0.694 & 78.006 & 6.467 & 3.395 & llama3.2:1b & 83.612 \\
+renaissance\_ferrara & <=4B & 360 & 0.628 & 77.949 & 8.870 & 6.077 & llama3.2:3b & 88.093 \\
+renaissance\_ferrara & <=8B & 360 & 0.406 & 82.090 & 8.205 & 10.030 & gemma4:e4b & 91.167 \\
+renaissance\_ferrara & >16B & 585 & 0.345 & 81.131 & 7.603 & 34.569 & gemma4:31b & 90.574 \\
+valdeloire & <=16B & 675 & 0.407 & 84.235 & 6.190 & 12.673 & gemma3:12b & 91.169 \\
+valdeloire & <=2B & 180 & 0.678 & 81.293 & 8.493 & 3.484 & qwen3:0.6b & 87.398 \\
+valdeloire & <=4B & 360 & 0.500 & 82.882 & 7.350 & 5.076 & llama3.2:3b & 88.986 \\
+valdeloire & <=8B & 360 & 0.364 & 84.086 & 6.434 & 9.134 & gemma3:4b & 91.263 \\
+valdeloire & >16B & 585 & 0.296 & 84.025 & 6.209 & 33.460 & qwen2.5:32b & 89.301 \\
+\bottomrule
+\end{tabular}

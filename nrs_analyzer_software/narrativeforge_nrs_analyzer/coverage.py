@@ -39,6 +39,7 @@ class CoverageOptions:
     model: str = "sentence-transformers/all-MiniLM-L6-v2"
     skip_entity_coverage: bool = False
     skip_keyphrase_coverage: bool = False
+    recompute: bool = False
 
 
 @dataclass
@@ -46,6 +47,10 @@ class CoverageResult:
     df: pd.DataFrame
     warnings: list[str]
     available: bool
+    cache_path: Path | None = None
+    cache_status: str = "unavailable"
+    computed_rows: int = 0
+    cached_rows: int = 0
 
 
 def split_sentences(text: str) -> list[str]:
@@ -167,6 +172,41 @@ def _resolve_text_sources(df: pd.DataFrame, source_col: str | None, generated_co
     return source_texts, generated_texts, warnings
 
 
+def _coverage_cache_key(row: pd.Series) -> str:
+    parts = [
+        row.get("nrs_runs_file", ""),
+        row.get("source_path", row.get("benchmark_source_file", row.get("source_file", ""))),
+        row.get("output_path", row.get("output", "")),
+        row.get("model", ""),
+        row.get("input_strategy", ""),
+        row.get("prompt_strategy", ""),
+        row.get("run", ""),
+        row.get("case_id", row.get("case_study", "")),
+    ]
+    return "||".join(str(part) for part in parts)
+
+
+def _coverage_metric_columns(thresholds: list[float]) -> list[str]:
+    cols = [
+        "source_word_count",
+        "generated_word_count",
+        "compression_ratio",
+        "source_sentence_count",
+        "generated_sentence_count",
+    ]
+    for threshold in thresholds:
+        suffix = f"{int(round(threshold * 100)):03d}"
+        cols.extend([f"source_coverage_{suffix}", f"generation_support_{suffix}"])
+    cols.extend([
+        "entity_coverage",
+        "keyphrase_coverage",
+        "coverage_adjusted_bertscore_075",
+        "coverage_adjusted_semantic_similarity_075",
+        "omission_risk_075",
+    ])
+    return cols
+
+
 def _cosine_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     a_norm = a / np.clip(np.linalg.norm(a, axis=1, keepdims=True), 1e-12, None)
     b_norm = b / np.clip(np.linalg.norm(b, axis=1, keepdims=True), 1e-12, None)
@@ -285,9 +325,12 @@ def compute_coverage_for_row(
     }
 
 
-def apply_coverage_diagnostics(df: pd.DataFrame, options: CoverageOptions, tables_dir: Path) -> CoverageResult:
+def apply_coverage_diagnostics(df: pd.DataFrame, options: CoverageOptions, tables_dir: Path, output_dir: Path | None = None) -> CoverageResult:
     out = df.copy()
     warnings: list[str] = []
+    output_dir = output_dir or tables_dir.parent
+    cache_path = output_dir / "coverage_metrics.csv"
+    out["coverage_cache_key"] = out.apply(_coverage_cache_key, axis=1)
     source_col, generated_col = detect_text_columns(out)
     source_texts, generated_texts, path_warnings = _resolve_text_sources(out, source_col, generated_col)
     warnings.extend(path_warnings)
@@ -306,14 +349,40 @@ def apply_coverage_diagnostics(df: pd.DataFrame, options: CoverageOptions, table
         tables_dir.mkdir(parents=True, exist_ok=True)
         unavailable_path.write_text(message, encoding="utf-8")
         warnings.append(message.strip())
-        return CoverageResult(out, warnings, False)
+        return CoverageResult(out, warnings, False, cache_path=cache_path)
+
+    metric_cols = _coverage_metric_columns(options.thresholds)
+    cache = pd.DataFrame()
+    if cache_path.exists() and not options.recompute:
+        try:
+            cache = pd.read_csv(cache_path)
+            if "coverage_cache_key" not in cache.columns:
+                cache = pd.DataFrame()
+        except Exception as exc:
+            warnings.append(f"Coverage cache could not be loaded and will be rebuilt: {exc}")
+            cache = pd.DataFrame()
+
+    cached_keys = set(cache["coverage_cache_key"].astype(str)) if not cache.empty else set()
+    current_keys = set(out["coverage_cache_key"].astype(str))
+    missing_mask = ~out["coverage_cache_key"].astype(str).isin(cached_keys)
+    rows_to_compute = out[missing_mask].copy() if not options.recompute else out.copy()
+    if options.recompute:
+        cache = pd.DataFrame()
+        cached_keys = set()
+        rows_to_compute = out.copy()
+
+    if not cache.empty and not options.recompute:
+        warnings.append(f"Loaded coverage metrics from cache: {cache_path} ({len(current_keys & cached_keys)} matching rows).")
+    if rows_to_compute.empty:
+        merged = out.merge(cache[["coverage_cache_key", *[c for c in metric_cols if c in cache.columns]]], on="coverage_cache_key", how="left")
+        return CoverageResult(merged, warnings, True, cache_path=cache_path, cache_status="loaded", computed_rows=0, cached_rows=len(current_keys & cached_keys))
 
     embedder = _load_sentence_transformer(options.model, warnings, options.enabled)
     nlp = None if options.skip_entity_coverage else _load_spacy(warnings)
     kw_model = None if options.skip_keyphrase_coverage else _load_keybert(warnings)
 
     rows = []
-    for idx, row in out.iterrows():
+    for idx, row in rows_to_compute.iterrows():
         metrics = compute_coverage_for_row(
             source_texts.loc[idx],
             generated_texts.loc[idx],
@@ -328,14 +397,22 @@ def apply_coverage_diagnostics(df: pd.DataFrame, options: CoverageOptions, table
         metrics["coverage_adjusted_bertscore_075"] = bert * coverage_075 if not pd.isna(bert) and not pd.isna(coverage_075) else np.nan
         metrics["coverage_adjusted_semantic_similarity_075"] = semantic * coverage_075 if not pd.isna(semantic) and not pd.isna(coverage_075) else np.nan
         metrics["omission_risk_075"] = bert - coverage_075 if not pd.isna(bert) and not pd.isna(coverage_075) else np.nan
+        metrics["coverage_cache_key"] = row["coverage_cache_key"]
         rows.append(metrics)
-    metrics_df = pd.DataFrame(rows, index=out.index)
-    for col in metrics_df.columns:
-        out[col] = metrics_df[col]
+    computed = pd.DataFrame(rows)
+    if not computed.empty:
+        cache = pd.concat([cache, computed], ignore_index=True) if not cache.empty else computed
+        cache = cache.drop_duplicates("coverage_cache_key", keep="last")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cache.to_csv(cache_path, index=False)
+    warnings.append(f"Computed coverage metrics for {len(computed)} row(s) and saved cache: {cache_path}.")
+
+    merged = out.merge(cache[["coverage_cache_key", *[c for c in metric_cols if c in cache.columns]]], on="coverage_cache_key", how="left")
     if warnings:
         tables_dir.mkdir(parents=True, exist_ok=True)
         (tables_dir / "coverage_diagnostics_warnings.txt").write_text("\n\n".join(warnings), encoding="utf-8")
-    return CoverageResult(out, warnings, True)
+    status = "recomputed" if options.recompute else ("partial" if cached_keys else "computed")
+    return CoverageResult(merged, warnings, True, cache_path=cache_path, cache_status=status, computed_rows=len(computed), cached_rows=len(current_keys & cached_keys))
 
 
 def has_coverage_metrics(df: pd.DataFrame) -> bool:

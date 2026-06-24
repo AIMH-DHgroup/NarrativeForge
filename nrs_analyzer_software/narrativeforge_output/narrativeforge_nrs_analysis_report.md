@@ -82,27 +82,27 @@ input_strategy prompt_strategy  attempts  mean_NRS    sd_NRS  ci95_NRS  ...  par
 ### Mean NRS by model
 
 ```text
-               model  parameters_b  attempts  mean_NRS    sd_NRS  ci95_NRS  ...  parameter_min_b  parameter_max_b  mean_NRS_success  sd_NRS_success  mean_runtime_success  sd_runtime_success
-           gemma3:4b          4.30       405 81.836430  9.360436  0.911643  ...             4.30             4.30         84.536653        3.901918              5.013042            2.961053
-          gemma3:27b         27.40       405 81.215881  9.546726  0.929786  ...            27.40            27.40         84.901505        4.440918             12.365924            6.714950
-          gemma3:12b         12.20       405 80.912252  9.611597  0.936104  ...            12.20            12.20         84.931854        4.727201              8.401075            5.348334
-          gemma4:e2b          5.12       405 80.772274 11.634819  1.133152  ...             5.12             5.12         85.141205        5.215751              7.626229            3.404299
-          gemma4:e4b          8.00       405 80.687170 10.546357  1.027143  ...             8.00             8.00         84.477572        5.246801             12.241615            7.902204
-            phi4:14b         14.70       405 80.644896  9.316020  0.907317  ...            14.70            14.70         83.228426        4.438093              5.892355            2.846121
-   mistral-small:24b         23.60       405 80.581259  9.931868  0.967296  ...            23.60            23.60         83.797893        5.179757              9.339509            3.938940
-         qwen2.5:32b         32.80       405 80.057889  9.705063  0.945207  ...            32.80            32.80         84.122607        4.720033             14.374043            6.918415
-         qwen2.5:14b         14.80       405 79.755274  9.497568  0.924998  ...            14.80            14.80         83.222307        4.486824              7.936668            4.553207
-mistral-small3.2:24b         24.00       405 79.516356  9.192623  0.895299  ...            24.00            24.00         83.282629        4.283064             16.609939           11.628031
-           gemma2:9b          9.24       405 79.436881  9.547377  0.929849  ...             9.24             9.24         84.796653        4.864325              5.008005            2.443741
-          gemma2:27b         27.20       405 79.379852  9.200570  0.896073  ...            27.20            27.20         84.264014        5.696692             12.163131            8.263346
-       granite3.3:8b          8.17       405 79.313815  9.646489  0.939502  ...             8.17             8.17         82.739416        4.470077              5.129330            2.095786
-           qwen3:14b         14.80       405 78.984548 16.549471  1.611806  ...            14.80            14.80         84.129585        4.374515             11.850821            5.574626
-           qwen3:32b         32.80       405 78.653156 16.555815  1.612424  ...            32.80            32.80         84.303451        4.350755             22.300512            6.208455
-          qwen2.5:7b          7.62       405 78.334170  8.970141  0.873631  ...             7.62             7.62         81.982759        4.219888              4.919345            3.374649
-         llama3.2:3b          3.21       405 78.330385  8.982201  0.874805  ...             3.21             3.21         81.542844        5.155985              3.748737            2.739957
-     deepseek-v2:16b         15.70       405 78.083844  8.273781  0.805810  ...            15.70            15.70         82.244287        4.850006             19.534456           38.945763
-         llama3.1:8b          8.03       405 78.032230 10.235082  0.996827  ...             8.03             8.03         81.773382        6.231174              5.480203            3.430339
-            qwen3:8b          8.19       405 77.843681 16.292817  1.586809  ...             8.19             8.19         83.363597        4.496210              8.266051            3.692107
+               model   family  parameters_b  attempts  mean_NRS    sd_NRS  ...  parameter_min_b  parameter_max_b  mean_NRS_success  sd_NRS_success  mean_runtime_success  sd_runtime_success
+           gemma3:4b   gemma3          4.30       405 81.836430  9.360436  ...             4.30             4.30         84.536653        3.901918              5.013042            2.961053
+          gemma3:27b   gemma3         27.40       405 81.215881  9.546726  ...            27.40            27.40         84.901505        4.440918             12.365924            6.714950
+          gemma3:12b   gemma3         12.20       405 80.912252  9.611597  ...            12.20            12.20         84.931854        4.727201              8.401075            5.348334
+          gemma4:e2b   gemma4          5.12       405 80.772274 11.634819  ...             5.12             5.12         85.141205        5.215751              7.626229            3.404299
+          gemma4:e4b   gemma4          8.00       405 80.687170 10.546357  ...             8.00             8.00         84.477572        5.246801             12.241615            7.902204
+            phi4:14b      phi         14.70       405 80.644896  9.316020  ...            14.70            14.70         83.228426        4.438093              5.892355            2.846121
+   mistral-small:24b  mistral         23.60       405 80.581259  9.931868  ...            23.60            23.60         83.797893        5.179757              9.339509            3.938940
+         qwen2.5:32b  qwen2.5         32.80       405 80.057889  9.705063  ...            32.80            32.80         84.122607        4.720033             14.374043            6.918415
+         qwen2.5:14b  qwen2.5         14.80       405 79.755274  9.497568  ...            14.80            14.80         83.222307        4.486824              7.936668            4.553207
+mistral-small3.2:24b  mistral         24.00       405 79.516356  9.192623  ...            24.00            24.00         83.282629        4.283064             16.609939           11.628031
+           gemma2:9b   gemma2          9.24       405 79.436881  9.547377  ...             9.24             9.24         84.796653        4.864325              5.008005            2.443741
+          gemma2:27b   gemma2         27.20       405 79.379852  9.200570  ...            27.20            27.20         84.264014        5.696692             12.163131            8.263346
+       granite3.3:8b  granite          8.17       405 79.313815  9.646489  ...             8.17             8.17         82.739416        4.470077              5.129330            2.095786
+           qwen3:14b    qwen3         14.80       405 78.984548 16.549471  ...            14.80            14.80         84.129585        4.374515             11.850821            5.574626
+           qwen3:32b    qwen3         32.80       405 78.653156 16.555815  ...            32.80            32.80         84.303451        4.350755             22.300512            6.208455
+          qwen2.5:7b  qwen2.5          7.62       405 78.334170  8.970141  ...             7.62             7.62         81.982759        4.219888              4.919345            3.374649
+         llama3.2:3b    llama          3.21       405 78.330385  8.982201  ...             3.21             3.21         81.542844        5.155985              3.748737            2.739957
+     deepseek-v2:16b deepseek         15.70       405 78.083844  8.273781  ...            15.70            15.70         82.244287        4.850006             19.534456           38.945763
+         llama3.1:8b    llama          8.03       405 78.032230 10.235082  ...             8.03             8.03         81.773382        6.231174              5.480203            3.430339
+            qwen3:8b    qwen3          8.19       405 77.843681 16.292817  ...             8.19             8.19         83.363597        4.496210              8.266051            3.692107
 ```
 
 ### Parameter correlations
@@ -123,6 +123,138 @@ size_bin  models  attempts  mean_NRS    sd_NRS  mean_runtime_seconds  sd_runtime
     >16B      13      5265 74.067890 18.394905             31.974994           59.481577      0.389554           23.600            36.00
 ```
 
+## Model Family Analysis
+
+- The strongest model-level result is gemma4:e2b with best_NRS=86.266 under full input.
+
+- Strategy effects are model-dependent; the model-strategy matrix should be used to check whether RAG or full context benefits all models equally.
+
+- At family level, gemma2 reaches the highest observed max_NRS=97.540 across 3 model(s).
+
+- Scaling curves reveal whether larger models consistently improve NRS or whether quality plateaus within each family, indicating diminishing returns.
+
+- The best configuration is gemma3:12b + full + detailed with mean_NRS=87.868 and runtime=9.455s.
+
+- The highest-NRS configuration is not the fastest among the top five; gemma4:e2b + full + detailed is the fastest top-five option.
+
+- Smaller models remain competitive when they appear near the top of the strategy matrix or Pareto frontier despite lower parameter counts.
+
+### Global model strategy matrix
+
+```text
+               model  parameters  auto_NRS  brief_NRS  rag_NRS  full_NRS best_strategy  best_NRS  mean_runtime  failure_rate
+          gemma4:e2b       5.120    85.405     79.994   85.290    86.266          full    86.266         6.935         0.267
+           gemma2:9b       9.240    84.487     79.756   84.910    86.117          full    86.117         4.515         0.474
+          gemma3:12b      12.200    85.842     81.340   84.619    86.019          full    86.019         7.689         0.306
+          gemma4:12b      12.200    70.920     60.656   75.776    85.938          full    85.938        38.136         0.489
+          gemma3:27b      27.400    85.064     81.522   85.419    85.024           rag    85.419        11.578         0.252
+          gemma4:e4b       8.000    85.410     79.164   85.367    85.252          auto    85.410        11.455         0.249
+           gemma3:4b       4.300    84.872     82.332   85.127    84.766           rag    85.127         4.836         0.126
+           qwen3:32b      32.800    84.828     80.568   85.028    84.809           rag    85.028        19.965         0.200
+     deepseek-v2:16b      15.700    82.995     78.436   84.181    85.021          full    85.021        29.147         0.519
+           qwen3:14b      14.800    84.385     80.828   84.843    84.845          full    84.845        11.148         0.131
+          gemma4:26b      25.800    77.812     77.212   79.630    84.794          full    84.794        22.445         0.383
+          gemma2:27b      27.200    84.738     80.074   84.118    84.572          auto    84.738        10.628         0.452
+           gemma3:1b       0.999    79.345     80.089   84.730    78.759           rag    84.730         4.605         0.721
+         qwen2.5:14b      14.800    82.696     80.591   84.124    84.583          full    84.583         7.589         0.309
+   mistral-small:24b      23.600    84.399     80.583   84.507    84.075           rag    84.507        10.166         0.215
+            qwen3:4b       4.020    84.129     80.233   79.459    84.450          full    84.450        14.532         0.338
+         qwen3.5:35b      36.000    72.033     75.361   63.750    84.422          full    84.422        25.442         0.511
+         qwen2.5:32b      32.800    84.247     81.641   84.379    84.270           rag    84.379        13.147         0.365
+           qwen3:30b      30.500    84.337     80.511   83.436    83.983          auto    84.337        10.952         0.309
+          gemma4:31b      31.300    83.286     78.759   84.104    84.298          full    84.298        84.401         0.272
+            phi4:14b      14.700    84.110     80.619   83.052    83.997          auto    84.110         6.108         0.200
+          qwen3.5:9b       9.650    53.914     50.079   40.558    84.058          full    84.058        34.133         0.716
+mistral-small3.2:24b      24.000    83.641     81.213   83.964    82.852           rag    83.964        14.399         0.435
+       granite3.3:8b       8.170    83.205     80.821   83.852    82.055           rag    83.852         4.928         0.311
+            qwen3:8b       8.190    83.725     80.889   83.324    83.831          full    83.831         7.597         0.227
+          qwen3:1.7b       2.030    83.127     79.907   83.546    83.371           rag    83.546         3.515         0.294
+         qwen3.5:27b      27.800    66.580     63.472   56.119    83.534          full    83.534       114.724         0.595
+           gemma2:2b       2.610    82.556     80.146   79.830    82.999          full    82.999         2.360         0.602
+       granite3.3:2b       2.530    80.416     81.374   82.772    81.133           rag    82.772         2.926         0.741
+          qwen2.5:7b       7.620    81.625     80.692   82.707    81.973           rag    82.707         4.663         0.385
+```
+
+### Prompt-specific model matrix
+
+```text
+               model  auto_short  auto_standard  auto_detailed  brief_short  brief_standard  ...  rag_short  rag_standard  rag_detailed  full_short  full_standard  full_detailed
+          cogito:14b         NaN         80.379         82.315       74.022          80.373  ...     78.789        82.452        86.481      80.697         85.506         82.093
+          cogito:32b      83.242         76.637         78.816       80.702          79.424  ...     81.415        83.204        83.515      81.674            NaN         79.246
+           cogito:3b         NaN         82.090         80.679          NaN          78.685  ...     81.191        79.750           NaN      74.540         84.470         72.999
+           cogito:8b      82.334         80.614         82.414          NaN          77.435  ...     81.299        81.937        82.726      78.399         75.709         64.020
+     deepseek-r1:14b      83.027         82.137         81.169       76.116          78.524  ...     80.450        80.440        80.724      81.268         80.213         79.310
+     deepseek-r1:32b      83.562         81.226         82.392       78.038          75.796  ...     81.324        79.792        84.216      82.255         79.820         83.658
+      deepseek-r1:7b      77.572         76.245         80.297       72.013          77.489  ...     79.025        68.000        78.548      81.743         72.662         80.006
+     deepseek-v2:16b      82.572         84.019         82.592       78.205          78.855  ...     84.222        83.538        85.270      87.474         83.837         83.751
+          gemma2:27b      83.235         84.991         85.313       78.834          81.136  ...     82.790        84.491        84.252      83.777         83.970         85.626
+           gemma2:2b      83.264         81.738         82.904       78.839          79.670  ...     77.926        80.872        79.275      85.111         80.328         83.489
+           gemma2:9b      84.256         84.886         84.306          NaN          79.212  ...     82.216        85.883        84.867      84.836         86.618         86.405
+          gemma3:12b      84.991         85.278         86.846       78.660          81.715  ...     81.014        85.214        85.226      82.692         85.772         87.868
+           gemma3:1b      80.473         78.220         80.218       79.907          80.448  ...     82.763        86.851        84.576      76.487         80.845         77.808
+          gemma3:27b      85.682         84.981         84.704       83.634          80.983  ...     85.077        86.014        85.299      84.893         84.840         85.272
+           gemma3:4b      85.444         84.894         84.255       81.210          82.880  ...     85.654        84.605        85.122      84.639         84.223         85.537
+          gemma4:12b      81.455         52.648         69.675       66.643          62.213  ...     83.469        53.536        51.292      84.149         86.191         87.396
+          gemma4:26b      81.974         74.865         75.650       77.783          76.319  ...     77.919        79.335        81.993      83.465         85.224         85.660
+          gemma4:31b      80.786         83.251         84.570       75.820          78.196  ...     82.365        85.231        84.137      79.457         85.536         85.750
+          gemma4:e2b      84.092         85.763         85.524       77.336          79.534  ...     83.290        86.063        85.999      84.746         86.600         87.003
+          gemma4:e4b      84.298         85.474         85.844       75.941          78.922  ...     83.322        85.163        87.164      82.826         85.434         87.225
+       granite3.3:2b      81.005         78.943            NaN       81.024          81.957  ...     82.772           NaN           NaN      81.133            NaN            NaN
+       granite3.3:8b      83.612         83.273         82.809       78.353          81.481  ...     84.140        82.960        84.444      83.485         78.715         82.348
+         llama3.1:8b      83.763         81.412         83.065          NaN          80.879  ...     83.382        81.012        82.124      83.145         74.626         77.182
+         llama3.2:1b      80.374         77.189         74.356       74.122          75.189  ...     80.129        75.739        77.920      81.210         79.357         80.387
+         llama3.2:3b      87.534         81.169         80.141          NaN          78.106  ...     84.016        81.392        81.202      82.880         81.558         80.576
+    mistral-nemo:12b      75.044            NaN            NaN       75.816             NaN  ...        NaN           NaN           NaN         NaN            NaN            NaN
+mistral-small3.2:24b      83.469         83.030         84.063          NaN          80.208  ...     80.534        84.548        84.717      81.658         82.616         83.596
+   mistral-small:24b      84.923         83.683         84.602       78.987          80.539  ...     85.427        84.705        83.343      84.260         85.074         82.545
+          mistral:7b      83.468         82.375         81.215       81.393          82.130  ...     82.918        82.156        84.572      83.153         82.025         80.258
+         phi3.5:3.8b      81.189            NaN            NaN       74.423             NaN  ...     82.192        77.213        77.996      81.485         80.538         67.224
+```
+
+### Model family summary
+
+```text
+  family  n_models  mean_NRS  max_NRS  mean_runtime  mean_failure_rate
+  gemma2         3    83.675   97.540         6.954              0.509
+  gemma4         5    82.409   94.712        35.622              0.332
+  gemma3         4    84.283   94.447         7.794              0.351
+ mistral         4    83.323   94.335        10.154              0.540
+ qwen2.5         3    83.124   94.333         9.086              0.353
+deepseek         4    81.241   93.491        28.523              0.564
+   qwen3         7    83.266   93.251        12.427              0.315
+     phi         3    79.896   93.051         7.052              0.449
+ qwen3.5         6    71.232   92.867        61.258              0.702
+ granite         2    82.515   92.097         4.365              0.526
+   llama         3    80.457   91.501         4.177              0.398
+  cogito         4    80.579   88.886         8.582              0.720
+```
+
+## Scaling Laws
+
+Family scaling figures show NRS, runtime, and quality-efficiency curves within each detected model family. Use these plots to identify whether extra parameters produce consistent gains or diminishing returns.
+
+## Top-5 Configuration Analysis
+
+```text
+ rank      model input_strategy prompt_strategy  mean_NRS  runtime_seconds  parameters  failure_rate
+    1 gemma3:12b           full        detailed    87.868            9.455       12.20         0.000
+    2 gemma4:12b           full        detailed    87.423           45.253       12.20         0.037
+    3 gemma4:e4b           full        detailed    87.225           10.925        8.00         0.000
+    4 gemma4:e4b            rag        detailed    87.164           12.134        8.00         0.000
+    5 gemma4:e2b           full        detailed    87.003            8.442        5.12         0.000
+```
+
+## Top-5 Model Analysis
+
+```text
+     model   auto  brief    rag   full
+gemma4:e2b 85.405 79.994 85.290 86.266
+gemma3:12b 85.842 81.340 84.619 86.019
+gemma3:27b 85.064 81.522 85.419 85.024
+ gemma2:9b 84.487 79.756 84.910 86.117
+ gemma3:4b 84.872 82.332 85.127 84.766
+```
+
 ## Efficiency and Pareto analysis
 
 The balanced score is a configurable deployment-oriented index: `0.50 * normalized_NRS + 0.20 * normalized_speed + 0.15 * normalized_size_efficiency + 0.10 * normalized_stability + 0.05 * normalized_reliability` by default. The weights can be changed from the CLI or dashboard.
@@ -130,13 +262,13 @@ The balanced score is a configurable deployment-oriented index: `0.50 * normaliz
 ### Best tradeoff configurations
 
 ```text
-                          criterion      model input_strategy prompt_strategy  parameters_b  attempts  ...  normalized_NRS  normalized_speed  normalized_size_efficiency  normalized_stability  normalized_reliability  balanced_score
-                   best raw quality gemma3:12b           full        detailed        12.200        27  ...        1.000000          0.751601                    0.061045              0.893251                1.000000        0.798802
-                best balanced score qwen3:0.6b            rag        detailed         0.752        27  ...        0.869467          0.936748                    0.995385              0.943971                0.592593        0.895417
-       best reliable balanced score  gemma3:1b          brief        standard         0.999        27  ...        0.882095          0.934269                    0.755048              0.897940                1.000000        0.880952
-            best quality per second  cogito:3b      rag_large           short         3.610        27  ...        0.719188          1.000000                    0.176914              0.605597                0.000000        0.646691
-best quality per billion parameters qwen3:0.6b           auto        detailed         0.752        27  ...        0.875293          0.944868                    1.000000              0.896315                0.555556        0.894029
-  best quality per parameter-second qwen3:0.6b           auto           short         0.752        27  ...        0.822886          0.983791                    0.958489              0.922146                0.074074        0.847893
+                          criterion      model family input_strategy prompt_strategy  parameters_b  ...  normalized_NRS  normalized_speed  normalized_size_efficiency  normalized_stability  normalized_reliability  balanced_score
+                   best raw quality gemma3:12b gemma3           full        detailed        12.200  ...        1.000000          0.751601                    0.061045              0.893251                1.000000        0.798802
+                best balanced score qwen3:0.6b  qwen3            rag        detailed         0.752  ...        0.869467          0.936748                    0.995385              0.943971                0.592593        0.895417
+       best reliable balanced score  gemma3:1b gemma3          brief        standard         0.999  ...        0.882095          0.934269                    0.755048              0.897940                1.000000        0.880952
+            best quality per second  cogito:3b cogito      rag_large           short         3.610  ...        0.719188          1.000000                    0.176914              0.605597                0.000000        0.646691
+best quality per billion parameters qwen3:0.6b  qwen3           auto        detailed         0.752  ...        0.875293          0.944868                    1.000000              0.896315                0.555556        0.894029
+  best quality per parameter-second qwen3:0.6b  qwen3           auto           short         0.752  ...        0.822886          0.983791                    0.958489              0.922146                0.074074        0.847893
 ```
 
 ### Quality loss by parameter threshold
@@ -153,37 +285,137 @@ all models gemma3:12b                full             detailed        12.200 87.
 ### Pareto-optimal configurations
 
 ```text
-        model input_strategy prompt_strategy  parameters_b  attempts  mean_NRS  ...  normalized_NRS  normalized_speed  normalized_size_efficiency  normalized_stability  normalized_reliability  balanced_score
-   qwen3:0.6b          brief           short         0.752        27 73.223222  ...        0.767304          0.988542                    0.914463              0.935168                0.000000        0.812047
-   qwen3:0.6b           auto           short         0.752        27 76.721222  ...        0.822886          0.983791                    0.958489              0.922146                0.074074        0.847893
-   qwen3:0.6b           auto        standard         0.752        27 77.359889  ...        0.833034          0.975811                    0.966527              0.822987                0.370370        0.857475
-   qwen3:0.6b          brief        detailed         0.752        27 73.908444  ...        0.778192          0.958985                    0.923087              0.900362                0.555556        0.837170
-   qwen3:0.6b           full           short         0.752        27 78.710111  ...        0.854488          0.956249                    0.983521              0.940144                0.185185        0.869296
-   qwen3:0.6b           auto        detailed         0.752        27 80.019444  ...        0.875293          0.944868                    1.000000              0.896315                0.555556        0.894029
-   qwen3:0.6b            rag        detailed         0.752        27 79.652778  ...        0.869467          0.936748                    0.995385              0.943971                0.592593        0.895417
-   qwen3:0.6b            rag        standard         0.752        27 79.813889  ...        0.872026          0.931989                    0.997413              0.881837                0.629630        0.891688
-    gemma3:1b          brief           short         0.999        27 78.144333  ...        0.845498          0.969400                    0.733227              0.907461                0.777778        0.856248
-    gemma3:1b          brief        standard         0.999        27 80.447556  ...        0.882095          0.934269                    0.755048              0.897940                1.000000        0.880952
-   qwen3:1.7b           auto           short         2.030        27 79.644111  ...        0.869329          0.956195                    0.364209              0.886676                0.481481        0.793277
-   qwen3:1.7b            rag           short         2.030        27 82.836000  ...        0.920046          0.915342                    0.379091              0.917945                0.777778        0.830639
-   qwen3:1.7b            rag        standard         2.030        27 82.698222  ...        0.917857          0.912060                    0.378449              0.940523                0.925926        0.838456
-   qwen3:1.7b           auto        detailed         2.030        27 83.078444  ...        0.923898          0.888453                    0.380222              0.915634                0.925926        0.834533
-granite3.3:2b          brief           short         2.530        27 81.024000  ...        0.891254          0.979810                    0.295986              0.945463                1.000000        0.830533
-granite3.3:2b            rag           short         2.530        27 81.854889  ...        0.904457          0.939478                    0.299094              0.969235                0.740741        0.818949
-    gemma2:2b          brief           short         2.610        27 74.899444  ...        0.793939          0.991104                    0.264486              0.952239                0.111111        0.735642
-    gemma2:2b            rag           short         2.610        27 76.125333  ...        0.813417          0.983896                    0.268931              0.956238                0.185185        0.748711
-  llama3.2:3b           full           short         3.210        27 82.295667  ...        0.911461          0.958504                    0.235525              0.888580                0.703704        0.806803
-    cogito:3b      rag_large           short         3.610        27 70.195000  ...        0.719188          1.000000                    0.176914              0.605597                0.000000        0.646691
-    cogito:3b           auto        standard         3.610        27 81.145667  ...        0.893188          0.958180                    0.205624              0.926455                0.740741        0.798756
-     qwen3:4b          brief        detailed         4.020        27 81.212556  ...        0.894250          0.813038                    0.184083              0.929006                1.000000        0.780246
-     qwen3:4b           auto        detailed         4.020        27 85.088444  ...        0.955836          0.796367                    0.193209              0.898233                1.000000        0.805996
-     qwen3:4b           full        detailed         4.020        27 85.764000  ...        0.966570          0.434472                    0.194799              0.897171                1.000000        0.739117
-    gemma3:4b           auto           short         4.300        27 85.443889  ...        0.961484          0.894686                    0.180946              0.935585                1.000000        0.830380
-    gemma3:4b            rag           short         4.300        27 85.654000  ...        0.964823          0.882656                    0.181409              0.970998                1.000000        0.833254
-   gemma4:e2b            rag        standard         5.120        27 86.062667  ...        0.971316          0.777521                    0.151970              0.924959                1.000000        0.806454
-   gemma4:e2b           full        standard         5.120        27 86.599889  ...        0.979852          0.775608                    0.152963              0.897718                1.000000        0.807764
-   gemma4:e2b           full        detailed         5.120        27 87.002667  ...        0.986252          0.769240                    0.153707              0.877265                1.000000        0.807757
-   mistral:7b            rag           short         7.250        27 82.758333  ...        0.918812          0.913720                    0.100916              0.941669                0.925926        0.797751
+        model  family input_strategy prompt_strategy  parameters_b  attempts  ...  normalized_NRS  normalized_speed  normalized_size_efficiency  normalized_stability  normalized_reliability  balanced_score
+   qwen3:0.6b   qwen3          brief           short         0.752        27  ...        0.767304          0.988542                    0.914463              0.935168                0.000000        0.812047
+   qwen3:0.6b   qwen3           auto           short         0.752        27  ...        0.822886          0.983791                    0.958489              0.922146                0.074074        0.847893
+   qwen3:0.6b   qwen3           auto        standard         0.752        27  ...        0.833034          0.975811                    0.966527              0.822987                0.370370        0.857475
+   qwen3:0.6b   qwen3          brief        detailed         0.752        27  ...        0.778192          0.958985                    0.923087              0.900362                0.555556        0.837170
+   qwen3:0.6b   qwen3           full           short         0.752        27  ...        0.854488          0.956249                    0.983521              0.940144                0.185185        0.869296
+   qwen3:0.6b   qwen3           auto        detailed         0.752        27  ...        0.875293          0.944868                    1.000000              0.896315                0.555556        0.894029
+   qwen3:0.6b   qwen3            rag        detailed         0.752        27  ...        0.869467          0.936748                    0.995385              0.943971                0.592593        0.895417
+   qwen3:0.6b   qwen3            rag        standard         0.752        27  ...        0.872026          0.931989                    0.997413              0.881837                0.629630        0.891688
+    gemma3:1b  gemma3          brief           short         0.999        27  ...        0.845498          0.969400                    0.733227              0.907461                0.777778        0.856248
+    gemma3:1b  gemma3          brief        standard         0.999        27  ...        0.882095          0.934269                    0.755048              0.897940                1.000000        0.880952
+   qwen3:1.7b   qwen3           auto           short         2.030        27  ...        0.869329          0.956195                    0.364209              0.886676                0.481481        0.793277
+   qwen3:1.7b   qwen3            rag           short         2.030        27  ...        0.920046          0.915342                    0.379091              0.917945                0.777778        0.830639
+   qwen3:1.7b   qwen3            rag        standard         2.030        27  ...        0.917857          0.912060                    0.378449              0.940523                0.925926        0.838456
+   qwen3:1.7b   qwen3           auto        detailed         2.030        27  ...        0.923898          0.888453                    0.380222              0.915634                0.925926        0.834533
+granite3.3:2b granite          brief           short         2.530        27  ...        0.891254          0.979810                    0.295986              0.945463                1.000000        0.830533
+granite3.3:2b granite            rag           short         2.530        27  ...        0.904457          0.939478                    0.299094              0.969235                0.740741        0.818949
+    gemma2:2b  gemma2          brief           short         2.610        27  ...        0.793939          0.991104                    0.264486              0.952239                0.111111        0.735642
+    gemma2:2b  gemma2            rag           short         2.610        27  ...        0.813417          0.983896                    0.268931              0.956238                0.185185        0.748711
+  llama3.2:3b   llama           full           short         3.210        27  ...        0.911461          0.958504                    0.235525              0.888580                0.703704        0.806803
+    cogito:3b  cogito      rag_large           short         3.610        27  ...        0.719188          1.000000                    0.176914              0.605597                0.000000        0.646691
+    cogito:3b  cogito           auto        standard         3.610        27  ...        0.893188          0.958180                    0.205624              0.926455                0.740741        0.798756
+     qwen3:4b   qwen3          brief        detailed         4.020        27  ...        0.894250          0.813038                    0.184083              0.929006                1.000000        0.780246
+     qwen3:4b   qwen3           auto        detailed         4.020        27  ...        0.955836          0.796367                    0.193209              0.898233                1.000000        0.805996
+     qwen3:4b   qwen3           full        detailed         4.020        27  ...        0.966570          0.434472                    0.194799              0.897171                1.000000        0.739117
+    gemma3:4b  gemma3           auto           short         4.300        27  ...        0.961484          0.894686                    0.180946              0.935585                1.000000        0.830380
+    gemma3:4b  gemma3            rag           short         4.300        27  ...        0.964823          0.882656                    0.181409              0.970998                1.000000        0.833254
+   gemma4:e2b  gemma4            rag        standard         5.120        27  ...        0.971316          0.777521                    0.151970              0.924959                1.000000        0.806454
+   gemma4:e2b  gemma4           full        standard         5.120        27  ...        0.979852          0.775608                    0.152963              0.897718                1.000000        0.807764
+   gemma4:e2b  gemma4           full        detailed         5.120        27  ...        0.986252          0.769240                    0.153707              0.877265                1.000000        0.807757
+   mistral:7b mistral            rag           short         7.250        27  ...        0.918812          0.913720                    0.100916              0.941669                0.925926        0.797751
+```
+
+## Coverage Diagnostics and Omission Risk
+
+BERTScore F1 and sentence-transformer semantic similarity were used as automatic semantic-alignment indicators between the generated narrative and the source document. They estimate whether the generated text preserves the meaning of the source at a global semantic level. However, because the comparison is performed between the complete generated narrative and the complete source document, these metrics may overestimate quality when the source is much longer than the generated narrative: a text can remain topically similar while omitting important facts, causal relations, or local details. Consequently, these measures do not replace expert factual validation, claim-level checking, or human evaluation of narrative faithfulness.
+
+The highest mean source coverage@0.75 is observed for input strategy rag_large (0.106).
+
+The largest mean omission risk@0.75 is observed for mistral-nemo:12b (0.808), indicating possible global similarity without broad source coverage.
+
+There are 4324 high-alignment/low-coverage cases with BERTScore F1 >= 0.85 and source coverage@0.75 <= 0.50.
+
+### Coverage by input strategy
+
+```text
+input_strategy  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+          auto              0.843                     0.746                     0.072                        0.380                   0.153  ...                    0.073                                 0.061                                           0.057                   0.772    2201         0.434
+         brief              0.828                     0.670                     0.031                        0.212                   0.140  ...                    0.046                                 0.026                                           0.022                   0.798    2121         0.454
+          full              0.850                     0.764                       NaN                          NaN                   0.000  ...                    0.000                                   NaN                                             NaN                     NaN    2371         0.390
+           rag              0.848                     0.756                     0.082                        0.440                   0.154  ...                    0.063                                 0.070                                           0.064                   0.766    2225         0.428
+     rag_large              0.854                     0.799                     0.106                        0.494                   0.207  ...                    0.106                                 0.091                                           0.086                   0.747    1225         0.685
+```
+
+### Coverage by prompt strategy
+
+```text
+prompt_strategy  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+       detailed              0.845                     0.748                     0.077                        0.355                   0.151  ...                    0.058                                 0.066                                           0.061                   0.765    3708         0.428
+          short              0.844                     0.739                     0.051                        0.380                   0.081  ...                    0.039                                 0.043                                           0.039                   0.792    2918         0.550
+       standard              0.844                     0.740                     0.074                        0.375                   0.123  ...                    0.056                                 0.063                                           0.058                   0.767    3517         0.457
+```
+
+### Coverage by model
+
+```text
+          model   family  parameters_b  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+     cogito:14b   cogito        14.800              0.831                     0.704                     0.045  ...                    0.028                                 0.038                                           0.033                   0.785      81         0.800
+     cogito:32b   cogito        32.800              0.839                     0.729                     0.042  ...                    0.048                                 0.035                                           0.032                   0.796     119         0.706
+      cogito:3b   cogito         3.610              0.838                     0.715                     0.049  ...                    0.059                                 0.042                                           0.037                   0.786     116         0.714
+      cogito:8b   cogito         8.030              0.841                     0.710                     0.052  ...                    0.054                                 0.044                                           0.039                   0.789     138         0.659
+deepseek-r1:14b deepseek        14.800              0.838                     0.728                     0.050  ...                    0.040                                 0.042                                           0.038                   0.787     179         0.558
+deepseek-r1:32b deepseek        32.800              0.844                     0.749                     0.058  ...                    0.046                                 0.049                                           0.045                   0.784     255         0.370
+ deepseek-r1:7b deepseek         7.620              0.835                     0.717                     0.031  ...                    0.024                                 0.026                                           0.024                   0.802      78         0.807
+deepseek-v2:16b deepseek        15.700              0.838                     0.736                     0.059  ...                    0.066                                 0.050                                           0.046                   0.777     195         0.519
+     gemma2:27b   gemma2        27.200              0.855                     0.759                     0.091  ...                    0.065                                 0.079                                           0.072                   0.763     222         0.452
+      gemma2:2b   gemma2         2.610              0.835                     0.737                     0.050  ...                    0.057                                 0.042                                           0.038                   0.785     161         0.602
+      gemma2:9b   gemma2         9.240              0.856                     0.779                     0.104  ...                    0.064                                 0.090                                           0.084                   0.750     213         0.474
+     gemma3:12b   gemma3        12.200              0.853                     0.768                     0.086  ...                    0.061                                 0.074                                           0.069                   0.764     281         0.306
+      gemma3:1b   gemma3         0.999              0.831                     0.687                     0.024  ...                    0.027                                 0.020                                           0.018                   0.807     113         0.721
+     gemma3:27b   gemma3        27.400              0.848                     0.760                     0.077  ...                    0.045                                 0.065                                           0.061                   0.770     303         0.252
+      gemma3:4b   gemma3         4.300              0.846                     0.762                     0.072  ...                    0.065                                 0.061                                           0.057                   0.772     354         0.126
+     gemma4:12b   gemma4        12.200              0.848                     0.749                     0.061  ...                    0.043                                 0.052                                           0.048                   0.782     207         0.489
+     gemma4:26b   gemma4        25.800              0.851                     0.750                     0.073  ...                    0.058                                 0.063                                           0.058                   0.777     250         0.383
+     gemma4:31b   gemma4        31.300              0.845                     0.745                     0.078  ...                    0.056                                 0.067                                           0.062                   0.766     295         0.272
+     gemma4:e2b   gemma4         5.120              0.858                     0.777                     0.111  ...                    0.066                                 0.096                                           0.091                   0.745     297         0.267
+     gemma4:e4b   gemma4         8.000              0.851                     0.765                     0.079  ...                    0.063                                 0.068                                           0.064                   0.770     304         0.249
+```
+
+### Coverage by model family
+
+```text
+  family  mean_bertscore_f1  mean_semantic_similarity  mean_source_coverage_075  mean_generation_support_075  mean_compression_ratio  ...  mean_keyphrase_coverage  mean_coverage_adjusted_bertscore_075  mean_coverage_adjusted_semantic_similarity_075  mean_omission_risk_075  n_runs  failure_rate
+  cogito              0.838                     0.715                     0.047                        0.333                   0.096  ...                    0.049                                 0.040                                           0.036                   0.790     454         0.720
+deepseek              0.840                     0.736                     0.053                        0.315                   0.115  ...                    0.047                                 0.045                                           0.041                   0.785     707         0.564
+  gemma2              0.850                     0.760                     0.084                        0.511                   0.109  ...                    0.062                                 0.072                                           0.067                   0.764     596         0.509
+  gemma3              0.847                     0.755                     0.071                        0.369                   0.127  ...                    0.054                                 0.060                                           0.056                   0.774    1051         0.351
+  gemma4              0.851                     0.758                     0.083                        0.409                   0.115  ...                    0.058                                 0.071                                           0.067                   0.766    1353         0.332
+ granite              0.838                     0.731                     0.073                        0.417                   0.125  ...                    0.054                                 0.062                                           0.057                   0.765     384         0.526
+   llama              0.841                     0.721                     0.068                        0.365                   0.132  ...                    0.048                                 0.058                                           0.052                   0.772     732         0.398
+ mistral              0.848                     0.747                     0.094                        0.484                   0.126  ...                    0.063                                 0.080                                           0.073                   0.752     746         0.540
+     phi              0.837                     0.728                     0.053                        0.317                   0.134  ...                    0.049                                 0.044                                           0.040                   0.784     670         0.449
+ qwen2.5              0.844                     0.739                     0.078                        0.397                   0.131  ...                    0.061                                 0.066                                           0.060                   0.765     786         0.353
+   qwen3              0.844                     0.750                     0.064                        0.297                   0.132  ...                    0.050                                 0.054                                           0.050                   0.779    1941         0.315
+ qwen3.5              0.841                     0.728                     0.044                        0.302                   0.086  ...                    0.027                                 0.037                                           0.034                   0.788     723         0.702
+```
+
+### High-alignment low-coverage cases
+
+```text
+               model input_strategy prompt_strategy                       case_id  bertscore_f1  semantic_similarity  source_coverage_075  generation_support_075  compression_ratio  omission_risk_075
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        standard           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+          gemma2:27b            rag        detailed           italian_madrigals02         0.969                0.949                0.059                   1.000              0.061              0.910
+           gemma2:9b            rag        standard           italian_madrigals02         0.959                0.935                0.067                   1.000              0.073              0.892
+           gemma2:9b            rag        standard           italian_madrigals02         0.958                0.935                0.067                   1.000              0.073              0.891
+           gemma2:9b            rag           short           italian_madrigals02         0.901                0.793                0.016                   0.571              0.040              0.885
+          gemma4:e4b            rag           short           italian_madrigals02         0.884                0.746                0.000                   0.000              0.047              0.884
+           gemma2:9b            rag           short           italian_madrigals02         0.902                0.781                0.024                   0.600              0.039              0.879
+           gemma3:1b            rag        standard 02_re_sounding_museum_cobo_ep         0.955                0.880                0.079                   0.233              0.586              0.876
+           gemma2:9b            rag        standard           italian_madrigals02         0.956                0.935                0.083                   1.000              0.083              0.873
+          cogito:14b            rag           short           italian_madrigals02         0.875                0.793                0.004                   0.100              0.047              0.871
+           qwen3:14b            rag        standard           italian_madrigals02         0.879                0.837                0.008                   0.087              0.089              0.871
+         qwen3.5:35b            rag        detailed           renaissance_ferrara         0.897                0.885                0.027                   0.500              0.052              0.870
+mistral-small3.2:24b            rag        detailed           italian_madrigals02         0.898                0.818                0.028                   0.364              0.087              0.870
+         qwen3.5:35b            rag           short           italian_madrigals02         0.882                0.803                0.012                   0.273              0.048              0.870
+          qwen3:0.6b            rag        standard           italian_madrigals02         0.878                0.798                0.008                   0.222              0.035              0.870
+            qwen3:8b            rag           short           italian_madrigals02         0.869                0.757                0.000                   0.000              0.050              0.869
+mistral-small3.2:24b            rag           short           italian_madrigals02         0.881                0.828                0.012                   0.273              0.042              0.869
+         qwen3.5:35b            rag           short           italian_madrigals02         0.877                0.784                0.008                   0.167              0.048              0.869
 ```
 
 ## Figures
@@ -254,6 +486,210 @@ This plot quantifies the NRS cost of limiting deployment to smaller models. It s
 
 The Pareto plot marks configurations that are not dominated on NRS, runtime, parameters, and failure rate. There are 33 Pareto-optimal configurations. These are the most rational candidates for retesting and deployment evaluation.
 
+### Family Cogito Scaling Nrs
+
+![family_cogito_scaling_nrs](figures/family_scaling/cogito_scaling_nrs.png)
+
+### Family Cogito Scaling Runtime
+
+![family_cogito_scaling_runtime](figures/family_scaling/cogito_scaling_runtime.png)
+
+### Family Cogito Quality Efficiency
+
+![family_cogito_quality_efficiency](figures/family_scaling/cogito_quality_efficiency.png)
+
+### Family Deepseek Scaling Nrs
+
+![family_deepseek_scaling_nrs](figures/family_scaling/deepseek_scaling_nrs.png)
+
+### Family Deepseek Scaling Runtime
+
+![family_deepseek_scaling_runtime](figures/family_scaling/deepseek_scaling_runtime.png)
+
+### Family Deepseek Quality Efficiency
+
+![family_deepseek_quality_efficiency](figures/family_scaling/deepseek_quality_efficiency.png)
+
+### Family Gemma2 Scaling Nrs
+
+![family_gemma2_scaling_nrs](figures/family_scaling/gemma2_scaling_nrs.png)
+
+### Family Gemma2 Scaling Runtime
+
+![family_gemma2_scaling_runtime](figures/family_scaling/gemma2_scaling_runtime.png)
+
+### Family Gemma2 Quality Efficiency
+
+![family_gemma2_quality_efficiency](figures/family_scaling/gemma2_quality_efficiency.png)
+
+### Family Gemma3 Scaling Nrs
+
+![family_gemma3_scaling_nrs](figures/family_scaling/gemma3_scaling_nrs.png)
+
+### Family Gemma3 Scaling Runtime
+
+![family_gemma3_scaling_runtime](figures/family_scaling/gemma3_scaling_runtime.png)
+
+### Family Gemma3 Quality Efficiency
+
+![family_gemma3_quality_efficiency](figures/family_scaling/gemma3_quality_efficiency.png)
+
+### Family Gemma4 Scaling Nrs
+
+![family_gemma4_scaling_nrs](figures/family_scaling/gemma4_scaling_nrs.png)
+
+### Family Gemma4 Scaling Runtime
+
+![family_gemma4_scaling_runtime](figures/family_scaling/gemma4_scaling_runtime.png)
+
+### Family Gemma4 Quality Efficiency
+
+![family_gemma4_quality_efficiency](figures/family_scaling/gemma4_quality_efficiency.png)
+
+### Family Granite Scaling Nrs
+
+![family_granite_scaling_nrs](figures/family_scaling/granite_scaling_nrs.png)
+
+### Family Granite Scaling Runtime
+
+![family_granite_scaling_runtime](figures/family_scaling/granite_scaling_runtime.png)
+
+### Family Granite Quality Efficiency
+
+![family_granite_quality_efficiency](figures/family_scaling/granite_quality_efficiency.png)
+
+### Family Llama Scaling Nrs
+
+![family_llama_scaling_nrs](figures/family_scaling/llama_scaling_nrs.png)
+
+### Family Llama Scaling Runtime
+
+![family_llama_scaling_runtime](figures/family_scaling/llama_scaling_runtime.png)
+
+### Family Llama Quality Efficiency
+
+![family_llama_quality_efficiency](figures/family_scaling/llama_quality_efficiency.png)
+
+### Family Mistral Scaling Nrs
+
+![family_mistral_scaling_nrs](figures/family_scaling/mistral_scaling_nrs.png)
+
+### Family Mistral Scaling Runtime
+
+![family_mistral_scaling_runtime](figures/family_scaling/mistral_scaling_runtime.png)
+
+### Family Mistral Quality Efficiency
+
+![family_mistral_quality_efficiency](figures/family_scaling/mistral_quality_efficiency.png)
+
+### Family Phi Scaling Nrs
+
+![family_phi_scaling_nrs](figures/family_scaling/phi_scaling_nrs.png)
+
+### Family Phi Scaling Runtime
+
+![family_phi_scaling_runtime](figures/family_scaling/phi_scaling_runtime.png)
+
+### Family Phi Quality Efficiency
+
+![family_phi_quality_efficiency](figures/family_scaling/phi_quality_efficiency.png)
+
+### Family Qwen2.5 Scaling Nrs
+
+![family_qwen2.5_scaling_nrs](figures/family_scaling/qwen2.5_scaling_nrs.png)
+
+### Family Qwen2.5 Scaling Runtime
+
+![family_qwen2.5_scaling_runtime](figures/family_scaling/qwen2.5_scaling_runtime.png)
+
+### Family Qwen2.5 Quality Efficiency
+
+![family_qwen2.5_quality_efficiency](figures/family_scaling/qwen2.5_quality_efficiency.png)
+
+### Family Qwen3 Scaling Nrs
+
+![family_qwen3_scaling_nrs](figures/family_scaling/qwen3_scaling_nrs.png)
+
+### Family Qwen3 Scaling Runtime
+
+![family_qwen3_scaling_runtime](figures/family_scaling/qwen3_scaling_runtime.png)
+
+### Family Qwen3 Quality Efficiency
+
+![family_qwen3_quality_efficiency](figures/family_scaling/qwen3_quality_efficiency.png)
+
+### Family Qwen3.5 Scaling Nrs
+
+![family_qwen3.5_scaling_nrs](figures/family_scaling/qwen3.5_scaling_nrs.png)
+
+### Family Qwen3.5 Scaling Runtime
+
+![family_qwen3.5_scaling_runtime](figures/family_scaling/qwen3.5_scaling_runtime.png)
+
+### Family Qwen3.5 Quality Efficiency
+
+![family_qwen3.5_quality_efficiency](figures/family_scaling/qwen3.5_quality_efficiency.png)
+
+### Top5 Nrs Bar
+
+![top5_nrs_bar](figures/top5/top5_nrs_bar.png)
+
+### Top5 Runtime Bar
+
+![top5_runtime_bar](figures/top5/top5_runtime_bar.png)
+
+### Top5 Nrs Runtime Scatter
+
+![top5_nrs_runtime_scatter](figures/top5/top5_nrs_runtime_scatter.png)
+
+### Top5 Radar
+
+![top5_radar](figures/top5/top5_radar.png)
+
+### Top Models Nrs
+
+![top_models_nrs](figures/top_models/top_models_nrs.png)
+
+### Top Models Runtime
+
+![top_models_runtime](figures/top_models/top_models_runtime.png)
+
+### Top Models Failure
+
+![top_models_failure](figures/top_models/top_models_failure.png)
+
+### Top Models Strategy Heatmap
+
+![top_models_strategy_heatmap](figures/top_models/top_models_strategy_heatmap.png)
+
+### Coverage By Input Strategy
+
+![coverage_by_input_strategy](figures/coverage/coverage_by_input_strategy.png)
+
+### Coverage By Prompt Strategy
+
+![coverage_by_prompt_strategy](figures/coverage/coverage_by_prompt_strategy.png)
+
+### Coverage Vs Bertscore
+
+![coverage_vs_bertscore](figures/coverage/coverage_vs_bertscore.png)
+
+### Omission Risk By Model
+
+![omission_risk_by_model](figures/coverage/omission_risk_by_model.png)
+
+### Coverage By Case
+
+![coverage_by_case](figures/coverage/coverage_by_case.png)
+
+### Coverage Adjusted Score By Configuration
+
+![coverage_adjusted_score_by_configuration](figures/coverage/coverage_adjusted_score_by_configuration.png)
+
+### Support Vs Coverage
+
+![support_vs_coverage](figures/coverage/support_vs_coverage.png)
+
 ## Critical discussion
 
 The benchmark is strong because it evaluates multiple input strategies, prompt strategies, models, runtimes, failures, and repeated configurations in a single experimental design. This makes it possible to distinguish raw quality from deployment feasibility. However, NRS remains an aggregate metric and should not be treated as a complete substitute for human evaluation. Aggregate metrics can obscure failure modes such as factual inconsistency, stylistic drift, verbosity, missing constraints, or brittle behavior on rare cases.
@@ -261,3 +697,5 @@ The benchmark is strong because it evaluates multiple input strategies, prompt s
 BERTScore and semantic-similarity components can reward lexical or semantic proximity without fully capturing narrative coherence, causal structure, pacing, or reader-perceived quality. They are valuable as scalable signals but should be complemented with targeted qualitative review. Runtime is hardware-dependent; measurements collected on a high-performance GPU workstation should be interpreted comparatively within this experiment, not as expected runtimes on laptops or commodity desktops.
 
 Threats to validity include benchmark-case representativeness, model-family confounding, prompt-template confounding, parameter-count inference errors for nonstandard model names, and runtime variability from local system load. Future work should retest the Pareto-optimal and balanced configurations on commodity hardware, add human preference evaluation, test more narrative genres, evaluate longer-context failure modes, and analyze confidence intervals over independent benchmark replications.
+
+Coverage diagnostics reduce but do not eliminate factuality threats. Future work should add claim-level factuality evaluation, source-span attribution, coverage-based scoring, human expert review, section-level or paragraph-level semantic comparison, and entity and event consistency checks.

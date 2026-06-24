@@ -92,4 +92,160 @@ rank & model & input\_strategy & prompt\_strategy & mean\_NRS & runtime\_seconds
 BERTScore F1 and sentence-transformer semantic similarity were used as automatic semantic-alignment indicators between the generated narrative and the source document. They estimate whether the generated text preserves the meaning of the source at a global semantic level. However, because the comparison is performed between the complete generated narrative and the complete source document, these metrics may overestimate quality when the source is much longer than the generated narrative: a text can remain topically similar while omitting important facts, causal relations, or local details. Consequently, these measures do not replace expert factual validation, claim-level checking, or human evaluation of narrative faithfulness.
 
 
+The highest mean source coverage@0.75 is observed for input strategy rag\_large (0.106).
+
+
+The largest mean omission risk@0.75 is observed for mistral-nemo:12b (0.808), indicating possible global similarity without broad source coverage.
+
+
+There are 4324 high-alignment/low-coverage cases with BERTScore F1 >= 0.85 and source coverage@0.75 <= 0.50.
+
+
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+input\_strategy & mean\_bertscore\_f1 & mean\_semantic\_similarity & mean\_source\_coverage\_075 & mean\_generation\_support\_075 & mean\_compression\_ratio & mean\_entity\_coverage & mean\_keyphrase\_coverage & mean\_coverage\_adjusted\_bertscore\_075 & mean\_coverage\_adjusted\_semantic\_similarity\_075 & mean\_omission\_risk\_075 & n\_runs & failure\_rate \\
+\midrule
+auto & 0.843 & 0.746 & 0.072 & 0.380 & 0.153 & NaN & NaN & 0.061 & 0.057 & 0.772 & 2201 & 0.434 \\
+brief & 0.828 & 0.670 & 0.031 & 0.212 & 0.140 & NaN & NaN & 0.026 & 0.022 & 0.798 & 2121 & 0.454 \\
+full & 0.850 & 0.764 & NaN & NaN & 0.000 & NaN & NaN & NaN & NaN & NaN & 2371 & 0.390 \\
+rag & 0.848 & 0.756 & 0.082 & 0.440 & 0.154 & NaN & NaN & 0.070 & 0.064 & 0.766 & 2225 & 0.428 \\
+rag\_large & 0.854 & 0.799 & 0.106 & 0.494 & 0.207 & NaN & NaN & 0.091 & 0.086 & 0.747 & 1225 & 0.685 \\
+\bottomrule
+\end{tabular}
+
+\section{Case Study Analysis}
+The benchmark contains 9 case studies. Case-level aggregation reveals whether benchmark conclusions are driven by a small subset of cases or whether observed strategy effects are consistent across scenarios. A case with low mean NRS and high variance should be treated as intrinsically difficult or underspecified, while a case with high input-strategy range is particularly sensitive to retrieval or context length. Conversely, a case where small models remain close to the case-level optimum suggests that the task may depend more on source coverage and prompt structure than on model scale.
+
+
+The easiest case by mean NRS is 02\_georgian\_poliphony (85.374), while the hardest is 02\_re\_sounding\_museum\_cobo\_ep (75.172).
+
+
+The highest failure rate occurs for italian\_madrigals02 (58.2%).
+
+
+The difficulty score ranks 02\_re\_sounding\_museum\_cobo\_ep as hardest and valdeloire as easiest after combining inverse NRS, failure rate, and NRS variability.
+
+
+The most stable case is valdeloire; the least stable is 02\_georgian\_poliphony, based on normalized NRS standard deviation.
+
+
+The case most sensitive to input strategy is renaissance\_ferrara with an NRS range of 10.339.
+
+
+The case most sensitive to prompt strategy is 02\_georgian\_poliphony with an NRS range of 2.160.
+
+
+The largest small-model quality loss appears for italian\_madrigals02 under <=2B (10.961 NRS points). Small models remain most competitive for 02\_mdv\_from\_craft\_to\_sound\_cremona\_ep under <=8B.
+
+
+The best-configuration-by-case table should be used to check whether the global best model also dominates individual case studies or whether different cases require different models and strategies.
+
+
+\begin{tabular}{lrrrrrrrrrrrrrrrrr}
+\toprule
+case\_study & n\_runs & n\_successful\_runs & failure\_rate & n\_models & n\_input\_strategies & n\_prompt\_strategies & mean\_NRS & std\_NRS & median\_NRS & q25\_NRS & q75\_NRS & min\_NRS & max\_NRS & mean\_runtime\_seconds & std\_runtime\_seconds & median\_runtime\_seconds & mean\_parameters \\
+\midrule
+02\_georgian\_poliphony & 2160 & 1097 & 0.492 & 48 & 5 & 3 & 85.374 & 8.450 & 86.572 & 82.599 & 90.776 & 40.444 & 97.540 & 17.751 & 34.833 & 8.221 & 15.505 \\
+valdeloire & 2160 & 1279 & 0.408 & 48 & 5 & 3 & 83.817 & 6.559 & 85.374 & 83.394 & 86.697 & 41.606 & 91.263 & 17.249 & 37.760 & 7.924 & 14.803 \\
+italian\_madrigals02 & 2160 & 902 & 0.582 & 48 & 5 & 3 & 83.715 & 7.989 & 85.050 & 83.153 & 86.888 & 39.951 & 97.143 & 20.268 & 48.266 & 7.446 & 14.388 \\
+harmonic\_itinerary\_jan\_2026\_v4 & 2160 & 1206 & 0.442 & 48 & 5 & 3 & 83.676 & 8.419 & 85.983 & 82.033 & 88.274 & 38.347 & 91.518 & 15.399 & 34.638 & 6.636 & 14.574 \\
+hangveto\_02\_ep & 2160 & 1112 & 0.485 & 48 & 5 & 3 & 82.961 & 6.594 & 84.431 & 82.421 & 85.935 & 41.444 & 89.936 & 17.535 & 38.936 & 6.940 & 14.396 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & 2160 & 1330 & 0.384 & 48 & 5 & 3 & 81.406 & 6.945 & 83.078 & 80.316 & 84.922 & 36.217 & 91.214 & 15.757 & 33.865 & 7.338 & 13.958 \\
+renaissance\_ferrara & 2160 & 1151 & 0.467 & 48 & 5 & 3 & 81.141 & 7.585 & 83.014 & 79.401 & 85.349 & 35.723 & 92.518 & 17.342 & 38.476 & 7.829 & 14.990 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & 2160 & 995 & 0.539 & 48 & 5 & 3 & 77.379 & 6.949 & 78.686 & 75.991 & 81.332 & 39.233 & 87.120 & 20.013 & 45.862 & 7.755 & 14.630 \\
+02\_re\_sounding\_museum\_cobo\_ep & 2160 & 1071 & 0.504 & 48 & 5 & 3 & 75.172 & 6.914 & 76.114 & 73.807 & 78.746 & 35.697 & 83.507 & 17.239 & 38.899 & 7.036 & 14.398 \\
+\bottomrule
+\end{tabular}
+
+\begin{tabular}{rlrrrrl}
+\toprule
+rank & case\_study & mean\_NRS & std\_NRS & failure\_rate & difficulty\_score & difficulty\_label \\
+\midrule
+1 & 02\_re\_sounding\_museum\_cobo\_ep & 75.172 & 6.914 & 0.504 & 0.780 & hard \\
+2 & 02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & 77.379 & 6.949 & 0.539 & 0.697 & hard \\
+3 & italian\_madrigals02 & 83.715 & 7.989 & 0.582 & 0.461 & hard \\
+4 & renaissance\_ferrara & 81.141 & 7.585 & 0.467 & 0.435 & moderate \\
+5 & harmonic\_itinerary\_jan\_2026\_v4 & 83.676 & 8.419 & 0.442 & 0.321 & moderate \\
+6 & 02\_georgian\_poliphony & 85.374 & 8.450 & 0.492 & 0.286 & moderate \\
+7 & hangveto\_02\_ep & 82.961 & 6.594 & 0.485 & 0.272 & easy \\
+8 & 02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & 81.406 & 6.945 & 0.384 & 0.264 & easy \\
+9 & valdeloire & 83.817 & 6.559 & 0.408 & 0.122 & easy \\
+\bottomrule
+\end{tabular}
+
+\begin{tabular}{llllrrrrrr}
+\toprule
+case\_study & best\_model & best\_input\_strategy & best\_prompt\_strategy & best\_mean\_NRS & best\_std\_NRS & best\_runtime\_seconds & best\_parameters & best\_failure\_rate & n\_runs \\
+\midrule
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & mistral-small:24b & rag & short & 87.120 & 0.000 & 5.769 & 23.600 & 0.000 & 3 \\
+02\_georgian\_poliphony & gemma2:27b & full & standard & 97.540 & 0.000 & 18.476 & 27.200 & 0.000 & 3 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & llama3.2:3b & rag & short & 91.214 & 0.000 & 3.933 & 3.210 & 0.000 & 3 \\
+02\_re\_sounding\_museum\_cobo\_ep & gemma3:27b & rag & short & 83.507 & 0.000 & 11.228 & 27.400 & 0.000 & 3 \\
+hangveto\_02\_ep & gemma4:e4b & full & detailed & 89.936 & 0.000 & 11.330 & 8.000 & 0.000 & 3 \\
+harmonic\_itinerary\_jan\_2026\_v4 & mistral-small:24b & full & short & 91.518 & 0.000 & 5.614 & 23.600 & 0.000 & 3 \\
+italian\_madrigals02 & gemma2:27b & rag & standard & 97.143 & 0.000 & 12.014 & 27.200 & 0.000 & 3 \\
+renaissance\_ferrara & gemma3:12b & full & detailed & 92.518 & 0.000 & 10.451 & 12.200 & 0.000 & 3 \\
+valdeloire & gemma3:4b & full & detailed & 91.263 & 0.000 & 7.509 & 4.300 & 0.000 & 3 \\
+\bottomrule
+\end{tabular}
+
+\begin{tabular}{llrlrrrrrr}
+\toprule
+case\_study & best\_input\_strategy & best\_input\_NRS & worst\_input\_strategy & worst\_input\_NRS & input\_strategy\_NRS\_range & full\_minus\_brief\_NRS & rag\_minus\_brief\_NRS & full\_minus\_auto\_NRS & rag\_minus\_auto\_NRS \\
+\midrule
+renaissance\_ferrara & rag & 83.225 & brief & 72.886 & 10.339 & 10.276 & 10.339 & 0.132 & 0.195 \\
+02\_georgian\_poliphony & auto & 88.496 & brief & 78.950 & 9.546 & 9.489 & 3.859 & -0.057 & -5.687 \\
+harmonic\_itinerary\_jan\_2026\_v4 & full & 85.676 & brief & 77.925 & 7.751 & 7.751 & 7.040 & 0.322 & -0.389 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & full & 83.017 & brief & 76.134 & 6.883 & 6.883 & 6.313 & 0.708 & 0.138 \\
+italian\_madrigals02 & rag & 86.632 & auto & 80.492 & 6.140 & 4.845 & 5.098 & 5.887 & 6.140 \\
+02\_re\_sounding\_museum\_cobo\_ep & rag & 78.280 & auto & 72.964 & 5.316 & 2.271 & 4.711 & 2.876 & 5.316 \\
+hangveto\_02\_ep & full & 84.540 & brief & 81.756 & 2.784 & 2.784 & 1.792 & 2.580 & 1.588 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & rag & 78.264 & full & 76.643 & 1.621 & -0.829 & 0.792 & -0.619 & 1.002 \\
+valdeloire & auto & 84.332 & brief & 83.198 & 1.134 & 0.282 & 0.890 & -0.852 & -0.244 \\
+\bottomrule
+\end{tabular}
+
+\begin{tabular}{llrlrrrrr}
+\toprule
+case\_study & best\_prompt\_strategy & best\_prompt\_NRS & worst\_prompt\_strategy & worst\_prompt\_NRS & prompt\_strategy\_NRS\_range & detailed\_minus\_short\_NRS & standard\_minus\_short\_NRS & detailed\_minus\_standard\_NRS \\
+\midrule
+02\_georgian\_poliphony & detailed & 86.215 & short & 84.055 & 2.160 & 2.160 & 1.715 & 0.445 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & detailed & 78.212 & short & 76.489 & 1.723 & 1.723 & 0.629 & 1.094 \\
+harmonic\_itinerary\_jan\_2026\_v4 & detailed & 84.563 & short & 82.846 & 1.717 & 1.717 & 0.372 & 1.345 \\
+renaissance\_ferrara & detailed & 81.994 & short & 80.465 & 1.529 & 1.529 & 0.420 & 1.109 \\
+hangveto\_02\_ep & detailed & 83.790 & short & 82.274 & 1.516 & 1.516 & 0.467 & 1.049 \\
+italian\_madrigals02 & detailed & 84.370 & short & 82.862 & 1.508 & 1.508 & 0.760 & 0.748 \\
+valdeloire & short & 84.576 & standard & 83.069 & 1.507 & -0.691 & -1.507 & 0.816 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & detailed & 81.930 & short & 80.482 & 1.448 & 1.448 & 1.119 & 0.329 \\
+02\_re\_sounding\_museum\_cobo\_ep & detailed & 75.501 & standard & 74.664 & 0.837 & 0.091 & -0.746 & 0.837 \\
+\bottomrule
+\end{tabular}
+
+\begin{tabular}{lllllrrrr}
+\toprule
+case\_study & threshold & best\_model & best\_input\_strategy & best\_prompt\_strategy & best\_mean\_NRS & runtime\_seconds & parameters & NRS\_loss\_vs\_case\_best \\
+\midrule
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=2B & llama3.2:1b & full & short & 84.666 & 2.576 & 1.240 & 2.454 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=4B & llama3.2:1b & full & short & 84.666 & 2.576 & 1.240 & 2.454 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=8B & gemma3:4b & brief & standard & 85.040 & 3.843 & 4.300 & 2.080 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & <=16B & gemma3:4b & brief & standard & 85.040 & 3.843 & 4.300 & 2.080 \\
+02\_final\_version\_cut\_map\_cnrs\_12\_01\_2026 & all & mistral-small:24b & rag & short & 87.120 & 5.769 & 23.600 & 0.000 \\
+02\_georgian\_poliphony & <=2B & llama3.2:1b & auto & standard & 88.147 & 2.043 & 1.240 & 9.393 \\
+02\_georgian\_poliphony & <=4B & llama3.2:3b & auto & short & 91.501 & 3.710 & 3.210 & 6.039 \\
+02\_georgian\_poliphony & <=8B & gemma4:e4b & auto & detailed & 94.712 & 11.468 & 8.000 & 2.828 \\
+02\_georgian\_poliphony & <=16B & gemma4:e4b & auto & detailed & 94.712 & 11.468 & 8.000 & 2.828 \\
+02\_georgian\_poliphony & all & gemma2:27b & full & standard & 97.540 & 18.476 & 27.200 & 0.000 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=2B & llama3.2:1b & full & short & 83.741 & 2.757 & 1.240 & 7.473 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=4B & llama3.2:3b & rag & short & 91.214 & 3.933 & 3.210 & 0.000 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=8B & llama3.2:3b & rag & short & 91.214 & 3.933 & 3.210 & 0.000 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & <=16B & llama3.2:3b & rag & short & 91.214 & 3.933 & 3.210 & 0.000 \\
+02\_mdv\_from\_craft\_to\_sound\_cremona\_ep & all & llama3.2:3b & rag & short & 91.214 & 3.933 & 3.210 & 0.000 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=2B & qwen3:0.6b & rag & standard & 81.372 & 2.156 & 0.752 & 2.135 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=4B & qwen3:1.7b & full & short & 82.265 & 5.062 & 2.030 & 1.242 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=8B & gemma3:4b & rag & short & 83.477 & 4.015 & 4.300 & 0.030 \\
+02\_re\_sounding\_museum\_cobo\_ep & <=16B & gemma3:4b & rag & short & 83.477 & 4.015 & 4.300 & 0.030 \\
+02\_re\_sounding\_museum\_cobo\_ep & all & gemma3:27b & rag & short & 83.507 & 11.228 & 27.400 & 0.000 \\
+\bottomrule
+\end{tabular}
+
 \end{document}
