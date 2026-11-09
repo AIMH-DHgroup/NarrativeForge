@@ -208,6 +208,101 @@ def _plot_top_model_figures(tables: dict[str, pd.DataFrame], figures_dir: Path, 
         ax.set_title("Top models by input strategy")
         fig.colorbar(image, ax=ax, label="Mean NRS")
         figures["top_models_strategy_heatmap"] = _save(fig, top_dir, "top_models_strategy_heatmap", options.figure_format)
+    top10 = model_summary.sort_values(quality_col, ascending=False).head(10).copy()
+    if not top10.empty:
+        fig, ax = plt.subplots(figsize=(8.2, 5.0))
+        ax.bar(top10["model"].astype(str), top10[quality_col])
+        ax.set_title("Best 10 models by mean NRS")
+        ax.set_ylabel("Mean NRS")
+        ax.tick_params(axis="x", labelrotation=40)
+        _grid(ax)
+        figures["top10_models_nrs"] = _save(fig, top_dir, "top10_models_nrs", options.figure_format)
+
+    combo = model_summary.dropna(subset=[quality_col, "mean_runtime_seconds"]).copy()
+    if not combo.empty:
+        nrs = combo[quality_col]
+        runtime = combo["mean_runtime_seconds"]
+        nrs_norm = (nrs - nrs.min()) / max(nrs.max() - nrs.min(), 1e-9)
+        speed_norm = 1 - (runtime - runtime.min()) / max(runtime.max() - runtime.min(), 1e-9)
+        combo["nrs_runtime_score"] = 0.70 * nrs_norm + 0.30 * speed_norm
+        top_combo = combo.sort_values("nrs_runtime_score", ascending=False).head(10)
+        fig, ax1 = plt.subplots(figsize=(8.6, 5.2))
+        x = np.arange(len(top_combo))
+        ax1.bar(x - 0.18, top_combo[quality_col], width=0.36, label="Mean NRS")
+        ax1.set_ylabel("Mean NRS")
+        ax1.set_xticks(x)
+        ax1.set_xticklabels(top_combo["model"].astype(str), rotation=40, ha="right")
+        ax2 = ax1.twinx()
+        ax2.bar(x + 0.18, top_combo["mean_runtime_seconds"], width=0.36, color="#0f766e", alpha=0.75, label="Runtime")
+        ax2.set_ylabel("Mean runtime (seconds)")
+        ax1.set_title("Best 10 models combining NRS and runtime")
+        _grid(ax1)
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, fontsize=8)
+        figures["top10_models_nrs_runtime_combined"] = _save(fig, top_dir, "top10_models_nrs_runtime_combined", options.figure_format)
+
+        top_failure = combo.sort_values("nrs_runtime_score", ascending=False).head(10).copy()
+        fig, ax = plt.subplots(figsize=(8.0, 5.6))
+        sizes = _bubble_sizes(top_failure["failure_rate"].fillna(0), min_size=80, max_size=520)
+        scatter = ax.scatter(
+            top_failure["mean_runtime_seconds"],
+            top_failure[quality_col],
+            s=sizes,
+            c=top_failure["failure_rate"].fillna(0),
+            alpha=0.72,
+        )
+        for _, row in top_failure.iterrows():
+            ax.annotate(str(row["model"]), (row["mean_runtime_seconds"], row[quality_col]), fontsize=7, xytext=(4, 4), textcoords="offset points")
+        ax.set_title("Best 10 models: NRS, runtime, and failure rate")
+        ax.set_xlabel("Mean runtime (seconds)")
+        ax.set_ylabel("Mean NRS")
+        _grid(ax)
+        fig.colorbar(scatter, ax=ax, label="Failure rate")
+        figures["top10_models_nrs_runtime_failure"] = _save(fig, top_dir, "top10_models_nrs_runtime_failure", options.figure_format)
+    return figures
+
+
+def _plot_per_input_scatter_figures(scatter: pd.DataFrame, input_order: list[str], figures_dir: Path, options) -> dict[str, Path]:
+    figures: dict[str, Path] = {}
+    if scatter.empty:
+        return figures
+    outdir = figures_dir / "input_strategy"
+    for input_strategy in input_order:
+        subset = scatter[scatter["input_strategy"] == input_strategy].copy()
+        if subset.empty:
+            continue
+        stem = _clean_filename(input_strategy)
+
+        fig, ax = plt.subplots(figsize=(7.2, 5.0))
+        ax.scatter(subset["parameters_b"], subset["mean_runtime_seconds"], alpha=0.68)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_title(f"Runtime vs parameters: {input_strategy}")
+        ax.set_xlabel("Parameters (billions, log scale)")
+        ax.set_ylabel("Mean runtime (seconds, log scale)")
+        _grid(ax, axis="both")
+        figures[f"runtime_vs_parameters_{stem}"] = _save(fig, outdir, f"runtime_vs_parameters_{stem}", options.figure_format)
+
+        fig, ax = plt.subplots(figsize=(7.2, 5.0))
+        sizes = _bubble_sizes(subset["parameters_b"])
+        ax.scatter(subset["mean_runtime_seconds"], subset["mean_NRS"], s=sizes, alpha=0.62)
+        ax.set_xscale("log")
+        ax.set_title(f"NRS vs runtime: {input_strategy}")
+        ax.set_xlabel("Mean runtime (seconds, log scale)")
+        ax.set_ylabel("Mean NRS")
+        _grid(ax)
+        figures[f"nrs_vs_runtime_bubble_parameters_{stem}"] = _save(fig, outdir, f"nrs_vs_runtime_bubble_parameters_{stem}", options.figure_format)
+
+        fig, ax = plt.subplots(figsize=(7.2, 5.0))
+        sizes = _bubble_sizes(np.log1p(subset["mean_runtime_seconds"]))
+        ax.scatter(subset["parameters_b"], subset["mean_NRS"], s=sizes, alpha=0.62)
+        ax.set_xscale("log")
+        ax.set_title(f"NRS vs parameters: {input_strategy}")
+        ax.set_xlabel("Parameters (billions, log scale)")
+        ax.set_ylabel("Mean NRS")
+        _grid(ax)
+        figures[f"nrs_vs_parameters_bubble_runtime_{stem}"] = _save(fig, outdir, f"nrs_vs_parameters_bubble_runtime_{stem}", options.figure_format)
     return figures
 
 
@@ -590,6 +685,8 @@ def create_all_figures(df: pd.DataFrame, tables: dict[str, pd.DataFrame], figure
         _grid(ax)
         ax.legend(title="Input", fontsize=8)
         figures["08_nrs_vs_parameters_bubble_runtime"] = _save(fig, figures_dir, "08_nrs_vs_parameters_bubble_runtime", options.figure_format)
+
+    figures.update(_plot_per_input_scatter_figures(scatter, input_order, figures_dir, options))
 
     # 9. Top balanced configurations.
     balanced = config.dropna(subset=["balanced_score"]).sort_values("balanced_score", ascending=False).head(12).copy()

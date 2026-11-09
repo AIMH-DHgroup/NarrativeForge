@@ -1,586 +1,298 @@
-# NarrativeForge
+# EventWeaver 3.10.0 - narratives directly from documents
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![Ollama](https://img.shields.io/badge/Ollama-local%20LLMs-black)
-![Status](https://img.shields.io/badge/status-research%20prototype-orange)
-![License](https://img.shields.io/github/license/AIMH-DHgroup/NarrativeForge)
-![Repo](https://img.shields.io/badge/GitHub-AIMH--DHgroup%2FNarrativeForge-blue)
+One command, `generate`, reads the documents, automatically identifies **up to 5 themes**, and produces one narrative per theme using the original text. Titles, themes, and narratives are requested in **English** by default, even when the documents use other languages.
 
-Local LLM pipeline for transforming cultural-heritage documents and tabular case-study records into event-ready narratives.
+There is no textual-evidence extraction phase. The system does not build collections of quotations or atomic facts for writing. Final narratives contain a title and prose, without notes or source lists added by the program.
 
-> NarrativeForge is the public project name. The Python module exposed by the CLI is `eventweaver`, so command examples use `python -m eventweaver ...`.
+## Getting Started
 
-## Short Project Summary
-
-NarrativeForge is a local Python pipeline for transforming `.docx` cultural-heritage case-study forms and `.csv` row-based datasets into short event-ready narratives using local Ollama models, then benchmarking the outputs with NRS and CSV-NRS reliability scores.
-
-The project is designed for research workflows that need grounded narrative generation, repeatable benchmarking, and Windows-friendly local execution.
-
-## Why NarrativeForge?
-
-- It keeps generation local by using Ollama models on your own machine.
-- It supports both narrative case-study forms and row-based tabular datasets.
-- It includes long-document handling so large `.docx` forms do not have to be processed as a single raw prompt.
-- It produces benchmarkable outputs with diagnostics, summaries, and visual reports.
-- It is suitable for reproducible research experiments on cultural heritage and structured case-study data.
-
-## Key Features
-
-- Read `.docx` case-study forms.
-- Read `.csv` datasets where each row is one narrative source.
-- Generate one narrative per `.docx` file.
-- Generate one narrative per CSV row.
-- Use local Ollama models only.
-- Support multiple models and multiple runs.
-- Support model presets.
-- Support long-document strategies: `auto`, `full`, `brief`, and `rag`.
-- Support a cultural-heritage prompt for `.docx`.
-- Support a value-chain prompt for `.csv`.
-- Record execution time for every model run.
-- Compute NRS / CleanScore-style metrics for `.docx`.
-- Compute CSV-NRS / Row-NRS for `.csv` rows.
-- Report diagnostics such as word count, paragraph count, broken sentence count, forbidden formatting count, failed runs, and runtime.
-- Produce CSV reports.
-- Produce optional Excel reports.
-- Produce visualizations.
-- Work locally on Windows, including PowerShell.
-
-## Repository Structure
-
-| Path | Purpose |
-| --- | --- |
-| `eventweaver/` | Python package and CLI implementation |
-| `case_studies/` | Example `.docx` case-study inputs |
-| `data/` | Example `.csv` tabular inputs |
-| `outputs/` | Generated narratives for `.docx` experiments |
-| `outputs_csv/` | Generated narratives for CSV experiments |
-| `benchmark_results/` | Benchmark outputs for `.docx` runs |
-| `benchmark_csv/` | Benchmark outputs for CSV runs |
-| `run_all_preset_experiments.ps1` | PowerShell launcher for preset-based experiments |
-| `run_csv_experiments.ps1` | PowerShell launcher for CSV experiments |
-| `run_prompt_strategy_experiments.ps1` | PowerShell launcher for prompt-strategy experiments |
-
-## Installation
-
-### Windows PowerShell
-
-```powershell
-python -m venv .venv
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-Optional metrics and report dependencies:
-
-```powershell
-pip install bert-score sentence-transformers pandas openpyxl matplotlib
-```
-
-### Linux / macOS
+Python 3.10 or later is required. From the project directory:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
+python -m eventweaver generate examples/documents \
+  --model installed-model-name --output-dir outputs
 ```
 
-Optional metrics and report dependencies:
+Replace `installed-model-name` with a model already available in Ollama (`ollama list`); the server must be running. The model must support the configured context window and respond with JSON.
+
+The package can also be installed with:
 
 ```bash
-pip install bert-score sentence-transformers pandas openpyxl matplotlib
+pip install -e '.[documents]'
+eventweaver generate ./documents --model installed-model-name --output-dir ./results
 ```
 
-## Ollama Setup
-
-Install and start Ollama locally, then pull the models you want to use.
+To reorganize and rewrite an already generated Markdown story:
 
 ```powershell
-ollama list
-ollama pull qwen3:8b
-ollama pull gemma3:12b
-ollama pull llama3.1:8b
+python -m eventweaver reorganize `
+  "./results/story.md" `
+  --prompt-file "./eventweaver/reorganize_prompt.txt" `
+  --model "gemma3:12b" `
+  --output "./results/story_reorganized.md"
 ```
 
-Models must be installed locally before generation.
+The command preserves the Markdown title and requests an English response.
 
-## Quick Start
+## Local Hemmingway
 
-### `.docx`
+`HemmingwayAI/Hemmingway-1.5` can be used as a local Hugging Face provider for
+both `generate` and `reorganize`. The first run downloads the model to the
+Hugging Face cache. It has roughly 27 billion parameters and needs more than
+50 GB for the weights, so Transformers uses automatic GPU/CPU offload.
+
+Install the local provider dependencies in the active environment:
 
 ```powershell
-python -m eventweaver all case_studies `
-  --models qwen3:8b gemma3:12b `
-  --runs 3 `
-  --input-strategy auto `
-  --output-dir outputs `
-  --outdir benchmark_results `
-  --excel
+pip install -e ".[hf-local]"
 ```
 
-### `.csv`
+Test generation:
 
 ```powershell
-python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
-  --models qwen3:8b gemma3:12b `
-  --runs 3 `
-  --prompt-kind value-chain `
-  --csv-id-column "Card ID" `
-  --csv-title-column "Descriptor of the value chain" `
-  --csv-all-columns `
-  --output-dir outputs_csv `
-  --outdir benchmark_csv `
-  --excel
+python -m eventweaver generate `
+  "./documents" `
+  --provider huggingface-local `
+  --model "HemmingwayAI/Hemmingway-1.5" `
+  --output-dir "./results_hf"
 ```
 
-## Input Formats
-
-### `.docx`
-
-- One document produces one generated narrative.
-- Text is extracted from paragraphs and tables.
-- Long documents can be handled through `auto`, `brief`, `full`, or `rag`.
-- The cultural-heritage prompt is used for `.docx` sources.
-- Prompt strategies such as `standard`, `short`, `detailed`, `strict`, `event_focused`, `faithfulness_first`, and `digital_heritage_focused` can be benchmarked with `--prompt-strategies`.
-
-### `.csv`
-
-- One row produces one generated narrative.
-- Empty rows are skipped.
-- Row ID and title columns can be configured.
-- CSV outputs include the row index, row ID, title slug, model name, and run number in filenames.
-- CSV is useful for tabular case-study datasets such as value-chain records.
-- The value-chain prompt is used for `.csv` sources.
-- Prompt strategies such as `standard`, `numeric_aware`, `field_coverage`, `concise`, `territorial_context`, and `innovation_focused` can be benchmarked with `--prompt-strategies`.
-
-## Generating Narratives from `.docx`
+Test reorganization:
 
 ```powershell
-python -m eventweaver generate case_studies --runs 3
+python -m eventweaver reorganize `
+  "./results/story.md" `
+  --provider huggingface-local `
+  --model "HemmingwayAI/Hemmingway-1.5" `
+  --prompt-file "./eventweaver/reorganize_prompt.txt" `
+  --output "./results/story_hemmingway.md"
 ```
+
+Custom prompts can be added as uppercase string constants in
+`eventweaver/prompts.py` and selected by name. For example, add `MY_WRITE = "..."`
+and run:
 
 ```powershell
-python -m eventweaver generate case_studies `
-  --models qwen3:8b gemma3:12b llama3.1:8b `
-  --runs 3 `
-  --input-strategy auto
+python -m eventweaver generate `
+  "./documents" `
+  --model "HemmingwayAI/Hemmingway-1.5" `
+  --provider huggingface-local `
+  --write-prompt MY_WRITE `
+  --output-dir "./results_hf"
 ```
 
-## Generating Narratives from `.csv`
+The same mechanism is available for `reorganize` with `--prompt-name`; use
+`--prompt-file` when the prompt should remain outside the Python module.
+The bundled `WRITE_PLACEMUS` prompt can be selected directly with
+`--write-prompt WRITE_PLACEMUS`.
 
-```powershell
-python -m eventweaver generate data\MOVING_VCs_DATASET_FINAL_V2.csv `
-  --models qwen3:8b gemma3:12b `
-  --runs 3 `
-  --prompt-kind value-chain `
-  --csv-id-column "Card ID" `
-  --csv-title-column "Descriptor of the value chain" `
-  --csv-all-columns
+Output directories must be outside input directories so later runs do not
+reread narratives as documents.
+
+## Titles And Word Limits
+
+Options are optional:
+
+- `--titles "Title one" "Title two"`: 1 to 5 distinct quoted titles. The number cannot exceed `--max-themes`. Titles retain their order without shortening or automatic translation; write them in English if English titles are desired.
+- `--max-words 800`: at most 800 words **per narrative**, excluding the title. It must be a positive integer. Without this option there is no overall narrative word limit.
+
+All documents are still read and aggregated before narratives are defined. Supplied titles define the relevant content from the aggregated information and do not add automatic titles. A title with no relevant chunks produces the same error as a theme with no usable material. Without `--titles`, global themes are selected automatically.
+
+The limit is a maximum, not an exact length. Counting uses whitespace-separated sequences (`str.split()`), so a hyphenated word counts as one word. Markdown titles and formatting whitespace are not counted. The final count is recorded in `manifest.json` under `narratives`.
+
+The first draft considers all assigned chunks. If it exceeds the maximum, an editorial rewrite makes it more concise; long drafts are processed in context-compatible batches. If the model still exceeds the assigned budget, the code applies the limit while preferring complete sentences. Very small limits may therefore produce terse text. Drafts and revisions remain available in the run records.
+
+`--max-new-tokens` limits each model response in every phase; `--max-words` limits the body of the final narrative. They are not equivalent.
+
+## Ollama Repetition Controls
+
+Two shell options are used during writing and editorial reduction:
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `--frequency-penalty` | `1.0` | Penalizes frequent recurrence of tokens |
+| `--presence-penalty` | `0.8` | Penalizes reuse of tokens already present in the model window |
+
+Both options accept finite numbers from **0 to 2**. `0` disables the corresponding penalty. Values are sent in `options.frequency_penalty` and `options.presence_penalty` in the native `/api/generate` request, not merely written into the prompt.
+
+Narrative prompts require lexical diversity, consistent names, dates, numbers, and technical terms, and no invented facts. Separate sections receive a short `previous_text` context, up to 1600 JSON/UTF-8 bytes, to reduce repetition. The saved section itself is not shortened.
+
+Penalties apply to `WRITE` and `CONDENSE`. Structured summarization, theme selection, and routing send zero so necessary JSON keys and identifiers are not penalized. Higher values do not guarantee removal of repetition and may reduce fluency. These options are available with `--provider ollama`; other providers report an explicit error instead of ignoring them.
+
+## Resuming A Run
+
+If a run completed its draft and stopped in `FASE: CONDENSE`, the completed draft can be reused:
+
+```bash
+python -m eventweaver generate --resume-run "./results/run_alpcqzip" --model "mistral-small:24b" --max-words 3000
 ```
 
-Smoke test with a row limit:
+The program creates a new `run_*` directory, copies the database with SQLite, and resumes final reduction. The previous run is read-only and is not modified. OCR, document reading, aggregation, theme selection, and draft generation are not repeated. The saved text and draft are reused, so the original input files are not required.
 
-```powershell
-python -m eventweaver generate data\MOVING_VCs_DATASET_FINAL_V2.csv `
-  --models qwen3:8b `
-  --runs 1 `
-  --prompt-kind value-chain `
-  --csv-max-rows 5
+Resume requires `manifest.json`, `themes.json`, and `analysis.sqlite`, with a draft for every theme and completed ingestion. It supports version 3.6 runs stopped with `FASE: CONDENSE`, including runs without the `draft_completed` checkpoint. A run stopped during initial writing cannot be resumed because its draft may be incomplete. Titles, language, and core parameters come from the manifest; supported reduction parameters can be overridden as documented by the CLI.
+
+## Narrative Response Formats
+
+Writing and reduction accept `paragraphs` as a list of objects, a list of strings, or a single string, as well as text fields such as `text`, `narrative`, `summary`, `content`, and `story`. Narrative phases also accept a root JSON list, a JSON string, or plain prose. An visibly incomplete JSON response is not treated as prose, and structural checks for themes and assignments remain active.
+
+If an editorial response remains unusable after the configured attempts, the available draft batch is used and capped at the word maximum, preferring complete sentences. The method is recorded in `revisions.jsonl` as `editorial_method: draft_word_cap`. LLM service errors, such as an unreachable server, are still reported.
+
+`responses.jsonl` and the SQLite `responses` table retain actual model responses, phase, attempt, parse errors, and truncation status. These records may contain document text and must be handled with the same confidentiality as the sources.
+
+## Pipeline
+
+1. **Reading.** Files and directories are discovered recursively, duplicate paths are removed, and every document is read. Pages or rows are segmented into overlapping chunks while retaining all text.
+2. **Full-corpus aggregation.** All documents, including required OCR, are read before the first model call. If the corpus fits, texts are presented together. Otherwise neutral summaries are prepared in batches and recursively integrated into one context. No themes are selected during this preparation.
+3. **Global theme extraction.** One selection phase receives the aggregated corpus and identifies 1 to 5 themes, considering connections and differences across documents. Manual `--titles` instead define the requested thematic focus. No per-document or per-chunk themes are generated.
+4. **Routing.** The model rereads original chunks and associates each with relevant themes. A chunk may belong to multiple themes or none.
+5. **Narrative.** For each theme, the model receives relevant original chunks in limited batches and writes narrative sections. Sections form a draft; `--max-words` triggers editorial reduction when needed.
+
+No later factual or semantic verification is performed. Technical checks for JSON, field formats, theme counts, assignments, and context budgets remain active.
+
+## Documents And Context
+
+Theme selection occurs only after all documents have been read. Large corpora use multiple neutral summarization calls before one global theme-selection call. No preliminary `top-k` filter excludes documents. Text is loaded one document at a time and stored in SQLite; later calls receive only required batches.
+
+```bash
+python -m eventweaver generate ./archive ./reports document.csv \
+  --model installed-model-name \
+  --max-themes 5 \
+  --language English \
+  --num-ctx 16384 \
+  --max-new-tokens 4096 \
+  --chunk-chars 3000 \
+  --overlap-chars 300 \
+  --output-dir ./results
 ```
 
-## Prompt-Engineering Experiments
+`--max-themes` accepts 1 to 5 and is a maximum; fewer themes may be produced. `--max-themes 1` requests one general theme and narrative. The default language is `English`; `--language` changes it explicitly. Replace legacy `--language Italiano` with `--language English`.
 
-NarrativeForge can treat prompt strategy as an experimental dimension, so you can compare how different prompt formulations affect quality, robustness, runtime, word count, paragraph structure, and failure rate.
+Every call checks its budget before execution:
 
-Prompt strategies must match the prompt kind. Use cultural-heritage strategies with `.docx` inputs and value-chain strategies with `.csv` inputs.
-
-### DOCX prompt-strategy experiment
-
-```powershell
-python -m eventweaver all case_studies `
-  --models qwen3:8b gemma3:12b `
-  --runs 3 `
-  --input-strategy auto `
-  --prompt-kind cultural-heritage `
-  --prompt-strategies standard short detailed strict event_focused faithfulness_first digital_heritage_focused `
-  --output-dir outputs_docx_prompt_exp `
-  --outdir benchmark_docx_prompt_exp `
-  --excel
+```text
+input_estimate + max_new_tokens + safety_margin <= num_ctx
 ```
 
-### CSV prompt-strategy experiment
+The estimate uses UTF-8 prompt bytes as a conservative approximation, not the model tokenizer count. The default margin is 512 tokens. Writing batches contain at most two chunks within the available budget, and paragraphs are retained in full.
 
-```powershell
-python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
-  --models qwen3:8b gemma3:12b `
-  --runs 3 `
-  --prompt-kind value-chain `
-  --prompt-strategies standard numeric_aware field_coverage concise territorial_context innovation_focused `
-  --csv-id-column "Card ID" `
-  --csv-title-column "Descriptor of the value chain" `
-  --csv-all-columns `
-  --output-dir outputs_csv_prompt_exp `
-  --outdir benchmark_csv_prompt_exp `
-  --excel
-```
+If an original chunk does not fit, the program reports an error rather than truncating documents: reduce `--chunk-chars` or increase `--num-ctx`. Intermediate summaries receive calculated word and byte budgets and may be compacted automatically. Full model output remains in `summaries.jsonl` as `raw_summary`; `body.text` contains the version used by later levels.
 
-## Long-Document Strategies
+When Ollama reaches the output limit, the client retains the text and distinguishes truncation from other errors. Complete valid JSON is accepted even when the server reports the token limit. Incomplete batches are split recursively; if the model still cannot produce valid JSON for a minimal chunk, the run stops explicitly.
 
-- `auto`: default; chooses full text for short sources and brief mode for longer sources.
-- `full`: sends the complete extracted source to the model; may hit context limits.
-- `brief`: creates a compact structured source brief before generation.
-- `rag`: retrieves relevant sections/chunks before generation.
+## Thematic Descriptions And Validation
 
-Increasing `--num-ctx` can help, but it uses more memory and may be slower.
-RAG can be more stable than sending too much context.
-Evaluation should compare outputs against the original source where applicable.
+Title and description limits are organizational metadata limits: 100 and 300 characters respectively. Missing descriptions fall back to the theme title. Empty titles, invalid field types, duplicate themes, and more than five themes remain errors. These rules do not shorten document text or narrative paragraphs.
 
-Examples:
+## Formats And OCR
 
-```powershell
-python -m eventweaver generate case_studies `
-  --input-strategy brief `
-  --models qwen3:8b gemma3:12b `
-  --runs 3
-```
-
-```powershell
-python -m eventweaver generate case_studies `
-  --input-strategy rag `
-  --top-k 8 `
-  --chunk-words 350 `
-  --chunk-overlap 80 `
-  --models qwen3:8b `
-  --runs 3
-```
-
-```powershell
-python -m eventweaver generate case_studies `
-  --input-strategy full `
-  --num-ctx 16384 `
-  --models llama3.1:8b `
-  --runs 3
-```
-
-## Model Presets
-
-The current code defines these presets:
-
-| Preset | Purpose |
+| Format | Reading |
 | --- | --- |
-| `default` | Current default model set |
-| `tiny` | Very light smoke tests |
-| `small` | Fast models for quick experiments |
-| `balanced` | Good routine set for most machines |
-| `medium` | Mid-size models |
-| `large` | High-capability local models under the current budget |
-| `long-context` | Models chosen for longer prompts and document tasks |
-| `narrative` | Models suitable for narrative rewriting and summarization |
-| `reasoning` | Reasoning-style models |
-| `high` | Strong models under the current budget |
-| `all` | Full feasible benchmark set |
-| `mixed` | Same model set as `all` |
+| PDF | Native text per page, with automatic, forced, or disabled OCR |
+| DOCX | Main paragraphs and tables in body order |
+| TXT / MD | UTF-8 text, including BOM |
+| CSV | All non-empty columns and rows; common delimiters detected automatically |
 
-Example:
+For scanned PDFs:
 
-```powershell
-python -m eventweaver generate case_studies --model-preset all --runs 1
+```bash
+pip install -e '.[documents,ocr]'
+python -m eventweaver generate ./scans --model installed-model-name \
+  --ocr auto --ocr-language ita+eng --ocr-dpi 200 --output-dir ./results
 ```
 
-Custom model names still work through `--models`, even if they are not listed in a preset.
+OCR uses Tesseract directly and images rendered by PyMuPDF. Tesseract and the required language packages must be installed. `auto` activates OCR for pages without usable native text; `always` requests recognition on every page; `never` disables it. Empty pages are recorded as `skipped: true` and are never replaced with invented text.
 
-## Evaluation Metrics
+The OCR language applies to input documents, not the English narrative language. For Spanish documents use `--ocr-language spa+eng` after installing both packages. OCR errors may appear in narratives. On Windows, set `TESSERACT_CMD` when Tesseract is not in PATH.
 
-### NRS for `.docx`
+## Persistent PDF Text Cache
 
-Preferred NRS:
+The cache is enabled by default in `.eventweaver_cache`, relative to the command directory. It stores final PDF page text, extraction method, and extraction parameters separately from `run_*` directories.
 
-```math
-NRS = 100 \cdot (0.35 \cdot mean_bertscore_f1 + 0.35 \cdot mean_semantic_similarity + 0.30 \cdot R)
+| Option | Effect |
+| --- | --- |
+| none | Read and update the cache automatically |
+| `--cache-dir "./cache_ocr"` | Select the persistent cache directory |
+| `--refresh-ocr` | Ignore saved text, re-extract pages, and update the cache |
+| `--no-cache` | Do not read or write the cache |
+
+`--refresh-ocr` and `--no-cache` are incompatible. Completed pages are written atomically; interrupted runs retain previous pages. The cache contains document text in plain form and can be deleted to reclaim space. `--resume-run` uses the saved draft without reading PDFs and does not accept the cache options.
+
+## Providers
+
+Ollama is the default. `--ollama-host` or `OLLAMA_HOST` selects another server; `--skip-ollama-preflight` skips only the initial installed-model check.
+
+Optional Hugging Face providers:
+
+```bash
+pip install -e '.[documents,hf-api]'
+# Set HF_TOKEN in the environment.
+python -m eventweaver generate ./documents --provider huggingface-api \
+  --model organization/model --output-dir ./results
 ```
 
-Fallback if BERTScore is unavailable:
-
-```math
-NRS = 100 \cdot (0.70 \cdot mean_semantic_similarity + 0.30 \cdot R)
+```bash
+pip install -e '.[documents,hf-local]'
+python -m eventweaver generate ./documents --provider huggingface-local \
+  --model model-path-or-identifier --output-dir ./results
 ```
 
-For a single output:
+OCR and Hugging Face dependencies are optional. Remote providers receive document text; Ollama and local Hugging Face process it locally.
 
-```math
-NRS_no_R = 100 \cdot (0.50 \cdot bertscore_f1 + 0.50 \cdot semantic_similarity)
+## Output
+
+Each execution creates a new `run_*` directory.
+
+| File | Content |
+| --- | --- |
+| `narrative_T01.md` ... `narrative_T05.md` | Narrative title and prose |
+| `themes.json` | Global themes with ID, title, and description |
+| `manifest.json` | Status, model, configuration, documents, extraction details, counts, calls, and errors |
+| `analysis.sqlite` | Original chunks, aggregate summaries, source relationships, assignments, and paragraphs |
+| `chunks.jsonl` | Original chunk text, without local themes |
+| `aggregate_context.json` | Context presented to global theme selection |
+| `summaries.jsonl` | Intermediate summaries, full model text, compact version, budget, and method |
+| `summary_inputs.jsonl` | Relationships between summaries and their inputs |
+| `assignments.jsonl` | Chunk-to-theme assignments |
+| `unassigned.jsonl` | Unassigned chunks and reasons |
+| `paragraphs.jsonl` | Initial draft paragraphs and internal chunk IDs |
+| `revisions.jsonl` | Editorial revisions and word-limit method |
+| `responses.jsonl` | Original model responses, phase, attempt, and parse errors |
+
+Use only runs with `manifest.status == "completed"`. Failed runs retain intermediate data for inspection.
+
+## Limits
+
+- Reading every chunk does not guarantee recognition of every theme or reporting of every fact; analysis, routing, and writing remain LLM decisions.
+- Hierarchical summaries may omit details or give less space to rare information. Full source text is retained and reread for routing and writing.
+- Chunks irrelevant to global themes do not enter narratives; they are recorded in `unassigned.jsonl`.
+- Batch writing can contain repetition and have weaker cohesion than writing with all sources at once. There is no final whole-corpus summary.
+- The model is instructed to use only supplied documents. No later factual check is performed.
+- Costs and runtime increase with documents, chunks, themes, and paragraphs.
+
+## Structure And API
+
+`cli.py` exposes `generate` and `reorganize`; `config.py` validates parameters; `ingestion/` reads and segments documents; `llm.py` handles batches, budgets, and JSON; `prompts.py` defines phases; `generation.py` orchestrates the flow; `resume.py` reuses a complete draft in a new run; `store.py` stores text and metadata; `providers/` and `ollama_client.py` manage models.
+
+```python
+from pathlib import Path
+from eventweaver.config import GenerateConfig
+from eventweaver.generation import generate_narratives
+from eventweaver.providers import build_provider
+
+config = GenerateConfig(max_themes=5, context_tokens=16384,
+                        narrative_titles=("Segobriga Through Time", "The Roman Amphitheatre"),
+                        max_narrative_words=800, frequency_penalty=1.2, presence_penalty=1.0)
+provider = build_provider("ollama", "installed-model-name", num_ctx=config.context_tokens, json_mode=True,
+                          frequency_penalty=config.frequency_penalty, presence_penalty=config.presence_penalty)
+run = generate_narratives([Path("documents")], output_dir=Path("results"), provider=provider, config=config)
+print(run)
 ```
 
-Fallback for a single output if BERTScore is unavailable:
+## Verification
 
-```math
-NRS_no_R = 100 \cdot semantic_similarity
+```bash
+python -m unittest discover -s tests -v
 ```
 
-Robustness:
-
-```math
-R = 0.50 \cdot R_stab + 0.25 \cdot R_struct + 0.25 \cdot R_fail
-```
-
-- `R_stab`: stability of semantic quality across repeated runs.
-- `R_struct`: stability of paragraph/event structure across repeated runs.
-- `R_fail`: penalty for failed outputs.
-
-### CSV-NRS / Row-NRS for `.csv`
-
-CSV row evaluation is implemented and exposed in the benchmark outputs as `CSV_NRS`.
-
-Per-row quality score:
-
-```math
-Q = 0.30 \cdot bertscore_f1 + 0.25 \cdot semantic_similarity + 0.30 \cdot field_coverage + 0.15 \cdot format_score
-```
-
-Fallback without BERTScore:
-
-```math
-Q = 0.45 \cdot semantic_similarity + 0.35 \cdot field_coverage + 0.20 \cdot format_score
-```
-
-Repeated-run CSV score:
-
-```math
-CSV_NRS = 100 \cdot (0.70 \cdot mean_Q + 0.30 \cdot R)
-```
-
-The CSV benchmark uses the same robustness term `R` as the `.docx` benchmark.
-
-## Diagnostics
-
-The generated reports include diagnostics such as:
-
-- `runtime_seconds`
-- `word_count`
-- `paragraph_count`
-- `broken_sentence_count`
-- `forbidden_formatting_count`
-- `failed`
-- `std_NRS`
-
-For CSV rows, the per-run reports also include `field_coverage`, `format_score`, `Q`, and `CSV_NRS`.
-
-## Reports and Visualizations
-
-Generation writes metadata to:
-
-- `generation_metadata.csv`
-- `generation_runs.csv`
-
-Benchmark evaluation writes:
-
-- `nrs_runs.csv`
-- `nrs_case_method_summary.csv`
-- `nrs_model_overall_summary.csv`
-
-CSV row runs are reported in the same benchmark files using `source_type=csv` and the `CSV_NRS` columns.
-
-If `--excel` is used, an Excel report is written as `nrs_report.xlsx`.
-
-Visualization outputs are written under the benchmark folder, typically in:
-
-- `benchmark_results/visuals/`
-- `benchmark_csv/visuals/`
-
-This includes summary tables, charts, and a `visual_report.md` file.
-
-## Evaluation Commands
-
-Evaluate generated outputs:
-
-```powershell
-python -m eventweaver evaluate `
-  --sources-dir case_studies `
-  --outputs-dir outputs `
-  --outdir benchmark_results `
-  --excel
-```
-
-Visualize benchmark outputs:
-
-```powershell
-python -m eventweaver visualize benchmark_results\nrs_runs.csv --outdir benchmark_results
-```
-
-Summarize an existing runs CSV:
-
-```powershell
-python -m eventweaver summarize benchmark_results\nrs_runs.csv --outdir benchmark_results
-```
-
-Manifest support:
-
-```powershell
-python -m eventweaver write-manifest-template manifest.csv
-python -m eventweaver evaluate --manifest manifest.csv --outdir benchmark_results
-```
-
-## PowerShell Experiment Scripts
-
-The repository includes convenience launchers for Windows PowerShell:
-
-```powershell
-.\run_all_preset_experiments.ps1
-.\run_csv_experiments.ps1
-.\run_prompt_strategy_experiments.ps1
-```
-
-Warning: all-model experiments can take a very long time. The number of generations is approximately:
-
-`number_of_sources x number_of_models x runs`
-
-Start with smoke tests before running full benchmarks.
-
-## Examples
-
-### Quick Smoke Test
-
-```powershell
-python -m eventweaver all case_studies `
-  --models qwen3:8b `
-  --runs 1 `
-  --output-dir outputs_smoke `
-  --outdir benchmark_smoke
-```
-
-### Balanced `.docx` Benchmark
-
-```powershell
-python -m eventweaver all case_studies `
-  --models gemma3:12b qwen3:8b qwen3:14b gemma3:4b `
-  --runs 3 `
-  --input-strategy auto `
-  --output-dir outputs_best `
-  --outdir benchmark_best `
-  --excel
-```
-
-### Long-Document RAG Benchmark
-
-```powershell
-python -m eventweaver all case_studies `
-  --models gemma3:12b qwen3:8b qwen3:14b `
-  --runs 3 `
-  --input-strategy rag `
-  --top-k 8 `
-  --chunk-words 350 `
-  --chunk-overlap 80 `
-  --output-dir outputs_rag `
-  --outdir benchmark_rag `
-  --excel
-```
-
-### CSV Value-Chain Benchmark
-
-```powershell
-python -m eventweaver all data\MOVING_VCs_DATASET_FINAL_V2.csv `
-  --models gemma3:12b qwen3:8b qwen3:14b `
-  --runs 3 `
-  --prompt-kind value-chain `
-  --csv-id-column "Card ID" `
-  --csv-title-column "Descriptor of the value chain" `
-  --csv-all-columns `
-  --output-dir outputs_csv `
-  --outdir benchmark_csv `
-  --excel
-```
-
-## Recommended Workflows
-
-- Quick smoke test first, then larger runs.
-- For `.docx`, start with `--input-strategy auto` and only switch to `rag` if the source is very long.
-- For `.csv`, start with a 1-run or 5-row smoke test before scaling to the full dataset.
-- Use `--excel` when you want a portable benchmark report.
-
-## Troubleshooting
-
-- PowerShell blocks activation:
-
-  ```powershell
-  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-  .\.venv\Scripts\Activate.ps1
-  ```
-
-- Ollama not running:
-
-  ```powershell
-  ollama list
-  ```
-
-- Model not installed:
-
-  ```powershell
-  ollama pull qwen3:8b
-  ```
-
-- Context window too small:
-  - use `--input-strategy brief`
-  - use `--input-strategy rag`
-  - increase `--num-ctx` if memory allows
-
-- BERTScore / transformer warnings:
-  - warnings about missing or unexpected weights are usually harmless for metric computation
-
-- Missing optional dependencies:
-
-  ```powershell
-  pip install bert-score sentence-transformers pandas openpyxl matplotlib
-  ```
-
-- Long CSV experiments take too long:
-  - reduce `--runs`
-  - use fewer models
-  - use `--csv-max-rows` for a smoke test
-  - start with `smoke_5rows`
-
-- DeepSeek `<think>` blocks:
-  - these are removed automatically in generation output
-
-## Research Context
-
-NarrativeForge is intended for experiments on grounded narrative generation, cultural-heritage digital workflows, narrative-event preparation, local LLM evaluation, long-document prompting, RAG, and reliability benchmarking. It is especially useful when expert-produced documentary sources need to be transformed into concise event-ready narratives while preserving traceability and processability.
-
-## Citation
-
-Suggested citation:
-
-```bibtex
-@software{narrativeforge2026,
-  title = {NarrativeForge: Local LLM Pipeline for Event-Ready Narrative Generation},
-  author = {Pratelli, Nicolo},
-  year = {2026},
-  url = {https://github.com/AIMH-DHgroup/NarrativeForge}
-}
-```
-
-If you add a `CITATION.cff` file later, keep this section aligned with it.
-
-## License
-
-No license file is currently included. Add a license before public release.
-
-## Contributing
-
-- Open an issue to discuss the change.
-- Create a branch for the work.
-- Run the smoke tests before submitting.
-- Open a pull request when ready.
-
-## Roadmap
-
-- Improved section-aware RAG.
-- Human expert evaluation interface.
-- Richer CSV field-coverage scoring.
-- Multilingual prompts.
-- More visual dashboards.
-- Citation-ready benchmark exports.
-- Integration with semantic story maps or narrative-event ontologies.
-- Support for additional structured formats.
+The test suite covers truncated WRITE responses, adaptive splitting without source loss, retry limits, OCR caching and interruption recovery, atomic writes, CLI validation, provider payloads, resume behavior, response formats, manual titles, narrative word limits, complete ingestion before the first LLM call, global theme selection, multi-level summaries, and OCR integration when Tesseract is available.

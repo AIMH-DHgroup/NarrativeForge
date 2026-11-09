@@ -1,3 +1,2 @@
-"""EventWeaver: local narrative generation and NRS benchmarking."""
-
-__version__ = "0.1.0"
+"""EventWeaver: document-grounded thematic narratives."""
+__version__ = "3.10.0"

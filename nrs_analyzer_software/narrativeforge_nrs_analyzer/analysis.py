@@ -190,10 +190,16 @@ def _model_strategy_matrix(df: pd.DataFrame, options: AnalysisOptions) -> pd.Dat
     )
     out = meta.join(means, how="left").reset_index()
     nrs_cols = [f"{strategy}_NRS" for strategy in options.input_order if f"{strategy}_NRS" in out.columns]
-    out["best_NRS"] = out[nrs_cols].max(axis=1, skipna=True)
-    out["best_strategy"] = out[nrs_cols].idxmax(axis=1).str.replace("_NRS", "", regex=False)
     cols = ["model", "parameters", *nrs_cols, "best_strategy", "best_NRS", "mean_runtime", "failure_rate"]
-    return _round_numeric(out[cols].sort_values("best_NRS", ascending=False), 3)
+    if nrs_cols:
+        out["best_NRS"] = out[nrs_cols].max(axis=1, skipna=True)
+        valid_nrs = out[nrs_cols].notna().any(axis=1)
+        out["best_strategy"] = pd.Series([np.nan] * len(out), dtype="object")
+        out.loc[valid_nrs, "best_strategy"] = out.loc[valid_nrs, nrs_cols].idxmax(axis=1).str.replace("_NRS", "", regex=False)
+    else:
+        out["best_NRS"] = np.nan
+        out["best_strategy"] = np.nan
+    return _round_numeric(out[cols].sort_values("best_NRS", ascending=False, na_position="last"), 3)
 
 
 def _model_strategy_prompt_matrix(df: pd.DataFrame, options: AnalysisOptions) -> pd.DataFrame:

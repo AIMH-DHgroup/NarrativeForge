@@ -6,7 +6,8 @@ import time
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
-import requests
+from .config import validate_penalty
+
 
 
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
@@ -17,6 +18,7 @@ class OllamaResult:
     text: str
     runtime_seconds: float
     error: str | None = None
+    truncated: bool = False
 
 
 def resolve_ollama_host(ollama_host: str | None = None) -> str:
@@ -45,6 +47,8 @@ def _connection_refused_message(host: str, exc: Exception) -> str:
 
 
 def list_ollama_models(ollama_host: str | None = None, timeout: int = 30) -> list[str]:
+    import requests
+
     host = resolve_ollama_host(ollama_host)
     try:
         response = requests.get(ollama_api_url(host, "/api/tags"), timeout=timeout)
@@ -60,19 +64,6 @@ def list_ollama_models(ollama_host: str | None = None, timeout: int = 30) -> lis
     return sorted(str(model.get("name", "")).strip() for model in payload.get("models", []) if str(model.get("name", "")).strip())
 
 
-def preflight_ollama(models: list[str], ollama_host: str | None = None, timeout: int = 30) -> list[str]:
-    host = resolve_ollama_host(ollama_host)
-    available = list_ollama_models(host, timeout=timeout)
-    missing = sorted(set(models) - set(available))
-    if missing:
-        raise RuntimeError(
-            "The following requested Ollama model(s) are not installed locally: "
-            + ", ".join(missing)
-            + ". Install them with 'ollama pull <model>' or choose a different --models/--model-preset value."
-        )
-    return available
-
-
 def remove_think_blocks(text: str) -> str:
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
 
@@ -82,17 +73,33 @@ def generate_ollama(
     model: str,
     temperature: float = 0.1,
     num_ctx: int = 8192,
+    max_new_tokens: int | None = None,
+    json_mode: bool = False,
+    think: bool | None = None,
     timeout: int = 900,
     ollama_host: str | None = None,
     retries: int = 1,
+    frequency_penalty: float = 0.0,
+    presence_penalty: float = 0.0,
 ) -> OllamaResult:
+    import requests
+
     host = resolve_ollama_host(ollama_host)
+    options = {"temperature": temperature, "num_ctx": num_ctx,
+               "frequency_penalty": validate_penalty(frequency_penalty, "frequency_penalty"),
+               "presence_penalty": validate_penalty(presence_penalty, "presence_penalty")}
+    if max_new_tokens is not None:
+        options["num_predict"] = max_new_tokens
     payload = {
         "model": model,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": temperature, "num_ctx": num_ctx},
+        "options": options,
     }
+    if json_mode:
+        payload["format"] = "json"
+    if think is not None:
+        payload["think"] = think
     started = time.perf_counter()
     attempts = max(1, retries + 1)
     for attempt in range(1, attempts + 1):
@@ -102,9 +109,12 @@ def generate_ollama(
                 time.sleep(min(2.0, 0.5 * attempt))
                 continue
             response.raise_for_status()
-            text = response.json().get("response", "").strip()
-            if "deepseek" in model.lower():
-                text = remove_think_blocks(text)
+            body = response.json()
+            if body.get("done_reason") == "length":
+                return OllamaResult(text=remove_think_blocks(body.get("response", "").strip()),
+                                    runtime_seconds=time.perf_counter() - started, truncated=True,
+                                    error="Ollama output interrupted at the token limit")
+            text = remove_think_blocks(body.get("response", "").strip())
             return OllamaResult(text=text, runtime_seconds=time.perf_counter() - started)
         except requests.exceptions.ConnectionError as exc:
             return OllamaResult(text="", runtime_seconds=time.perf_counter() - started, error=_connection_refused_message(host, exc))

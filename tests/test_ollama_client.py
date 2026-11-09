@@ -43,6 +43,24 @@ class OllamaClientTests(unittest.TestCase):
         self.assertEqual(result.text, "ok")
         self.assertEqual(post.call_count, 2)
 
+    def test_generate_can_request_bounded_json_output(self) -> None:
+        response = Mock(status_code=200)
+        response.json.return_value = {"response": "{}"}
+        response.raise_for_status.return_value = None
+        with patch("eventweaver.ollama_client.requests.post", return_value=response) as post:
+            result = generate_ollama(
+                "prompt",
+                "qwen3:8b",
+                max_new_tokens=512,
+                json_mode=True,
+                think=False,
+            )
+        self.assertEqual(result.text, "{}")
+        payload = post.call_args.kwargs["json"]
+        self.assertEqual(payload["format"], "json")
+        self.assertFalse(payload["think"])
+        self.assertEqual(payload["options"]["num_predict"], 512)
+
 
 if __name__ == "__main__":
     unittest.main()

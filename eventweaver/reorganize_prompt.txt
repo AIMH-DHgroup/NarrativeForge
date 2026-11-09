@@ -1,0 +1,20 @@
+You are a professional editor specialising in historical and academic writing.
+
+Rewrite the following document into a coherent, fluent narrative in formal British English.
+
+RULES:
+1. Preserve every original fact, name, date, number, measurement, relationship and qualification. Do not add, omit or change information.
+2. Reorganise sentences and paragraphs to group related information and improve logical and chronological flow.
+3. Prefer long, substantial paragraphs that develop complete subjects.
+4. Combine related events, places, people and historical periods into broader paragraphs rather than separating each into its own paragraph.
+5. Create a new paragraph only when the main subject changes significantly.
+6. Aim for 8–12 paragraphs for long documents. Never exceed 15 paragraphs. Use fewer for shorter documents.
+7. Avoid short paragraphs, unnecessary breaks, repetition and filler.
+8. Improve grammar, clarity and transitions while maintaining a formal, neutral academic style.
+9. Preserve the original meaning without adding explanations, interpretations or conclusions.
+
+OUTPUT:
+Return only the rewritten British English text, without titles, headings, notes or formatting.
+
+DOCUMENT:
+{document}

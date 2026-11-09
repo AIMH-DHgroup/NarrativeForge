@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eventweaver"
+version = "3.10.0"
+description = "Document-grounded thematic narrative generation"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.31"]
+
+[project.optional-dependencies]
+documents = ["python-docx>=1.1", "PyMuPDF>=1.24"]
+ocr = ["PyMuPDF>=1.24"]
+hf-api = ["huggingface_hub>=0.27"]
+hf-local = ["transformers>=4.57", "torch>=2.2", "accelerate>=0.34"]
+
+[project.scripts]
+eventweaver = "eventweaver.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["eventweaver*"]

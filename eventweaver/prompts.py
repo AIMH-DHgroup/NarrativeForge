@@ -1,282 +1,96 @@
-GENERAL_PROMPT_TEMPLATE = """You are a careful cultural heritage narrative editor.
+SUMMARIZE = """PHASE: SUMMARIZE
+Read ALL items in the batch and integrate their information into a neutral discursive summary,
+in OUTPUT_LANGUAGE. If you receive previous summaries, integrate and compress them further.
+Respect max_summary_words and max_summary_bytes in the data: they are limits for the ENTIRE summary,
+not for each item. Do not repeat inputs or expand previous summaries.
+The text must be brief, even when there are many inputs. Return only JSON.
+Preserve subjects, places, relevant dates, differences, uncertainties and contradictions; avoid repetition.
+Do not identify, name or select themes, categories, titles or possible narratives.
+Do not extract quotations or evidence lists. Do not introduce outside knowledge.
+This is only context preparation: themes will be identified AFTER aggregation.
+JSON: {"summary":"integrated discursive summary of the received content"}.
+"""
+THEMES = """PHASE: THEMES
+Write theme titles and descriptions in OUTPUT_LANGUAGE.
+You received aggregated information from the ENTIRE corpus, after reading all documents.
+Read ALL items together and identify 1 to MAX_THEMES global themes useful for the narratives.
+Consider connections and differences across the documents as a whole, without inventing relationships.
+Do not assign a theme per file or item and do not concatenate separately selected themes.
+Do not produce five themes if fewer are sufficient. Do not add facts to descriptions.
+If requested_titles is not empty, the titles were chosen by the user: return exactly one
+entry for each, in the same order, keeping title IDENTICAL, even if it exceeds 100 characters.
+Use the entire aggregated corpus to define each description; do not add automatic titles.
+Titles indicate the desired narrative focus but do not authorise facts absent from the documents.
+JSON: {"themes":[{"title":"maximum 100 characters","description":"maximum 300 characters"}]}.
+"""
+ROUTE = """PHASE: ROUTE
+Read the original chunks and associate EACH chunk with the relevant global themes.
+Do not force associations. If no theme is relevant, use theme_ids=[] and explain reason.
+JSON: {"assignments":[{"chunk_id":"...","theme_ids":["T01"],"reason":"..."}]}.
+Return exactly one entry for each received chunk.
+"""
+WRITE = """PHASE: WRITE
+Write a narrative section about the indicated theme, in the language requested by the language field.
+Write all narrative paragraphs in the requested language, even if the documents are in another
+language. Translate the information; do not copy untranslated prose from the documents.
+Read the attached original chunks directly and use only their relevant information.
+Do not add outside knowledge, historical explanations or causal links absent from the documents.
+Preserve attributions, negations, uncertainties and contradictions. Avoid repeating information
+identical in overlapping chunks. Each paragraph must be self-contained and complete. Do not impose a character limit per paragraph.
+Produce narrative prose without quotations, references, notes, source lists or titles.
+Respect max_words as the TOTAL response word budget across all paragraphs, not per paragraph.
+Write a concise section, select the pertinent information and stop. Do not expand the source text.
+Return only the JSON object, close every string, array and brace before the output limit.
+This is one section of a longer narrative; do not try to write the entire story in this response.
+Use lexical diversity: vary vocabulary, sentence openings, syntax and transitions.
+Do not repeat phrases, sentence templates, facts or explanations already stated in this narrative.
+Each section must add distinct information; do not write a new introduction or conclusion for every block.
+Keep proper names, dates, numbers and technical terms consistent. Never invent facts or change
+factual terms merely to create synonyms. previous_text is a continuity aid to avoid repetition,
+not an additional factual source: use only the current source material for new factual claims.
+JSON: {"paragraphs":[{"text":"..."}]}. The paragraphs field must be a list, even for a single paragraph.
+"""
 
-Your task is to transform the case-study form provided by the user into a plain textual narrative that can later be processed by a tool for creating narrative events.
+CONDENSE = """PHASE: CONDENSE
+Rewrite the received paragraphs as a more concise narrative section in the requested language.
+Consider ALL paragraphs and preserve central information, attributions, relevant dates,
+uncertainties and contradictions. Remove repetition and secondary details.
+Use only the received information. Do not introduce new facts or explanations.
+Respect max_words as the TOTAL word limit for this narrative response, not per paragraph.
+Produce complete sentences and readable prose without a title, quotations or notes.
+Do not fact-check the documents: this step only reduces length.
+Use lexical diversity: vary vocabulary, sentence openings, syntax and transitions.
+Do not repeat phrases, sentence templates, facts or explanations already stated in this narrative.
+Each section must add distinct information; do not write a new introduction or conclusion for every block.
+Keep proper names, dates, numbers and technical terms consistent. Never invent facts or change
+factual terms merely to create synonyms. previous_text is a continuity aid to avoid repetition,
+not an additional factual source: use only the current source material for new factual claims.
+JSON: {"paragraphs":[{"text":"..."}]}. The paragraphs field must be a list, even for a single paragraph.
+"""
 
-Use only the information contained in the case-study form. Do not invent names, dates, places, people, objects, coordinates, institutions, technologies, events, or interpretations that are not present in the source text. If some information is missing, omit it rather than guessing.
+WRITE_PLACEMUS = """PHASE: WRITE
+You are a careful cultural heritage narrative editor.
 
-Write a coherent narrative of about 450-550 words. The narrative must be divided into short paragraphs. Each paragraph must express one clear narrative event, place, transition, historical moment, musical experience, technological experience, social context, or heritage-related idea.
+Your task is to transform the documents provided by the user into a plain textual narrative titled {title} that can later be processed by a tool for creating narrative events.
 
-For this task, treat a paragraph as equivalent to a narrative event. Each paragraph must be syntactically complete and must contain complete sentences. Do not split sentences between paragraphs. Do not end a paragraph with an incomplete sentence.
+Use only the information contained in the documents. Do not invent names, dates, places, people, objects, coordinates, institutions, technologies, events, or interpretations that are not present in the source text. If some information is missing, omit it rather than guessing.
 
-Preserve the factual meaning of the source text as closely as possible. Rephrase only when needed to make the text readable as a narrative. Do not add explanatory comments, external knowledge, or general background information.
+Write a coherent narrative of about 800-900 words.
 
-The narrative should normally include, when available in the source form:
-the title or main concept of the itinerary;
-the geographical or territorial context;
-the historical period or chronology;
-the main places, sites, buildings, landscapes, or routes;
-the musical genre, musical practices, instruments, performers, repertoire, or sound-related elements;
-the cultural, historical, social, or religious significance of the music and places;
-the movement or relationship between the places in the itinerary;
-the tangible and intangible heritage objects involved;
-the accessibility, preservation, or transformation of the places;
-the planned digital, immersive, acoustic, or technological experiences;
-the intended public, educational, promotional, or social objectives.
+Do not use bullet points, numbered lists, tables, headings, metadata labels, Markdown, citations, or academic references inside the narrative text. Do not mention that you are following a prompt. Do not include phrases such as "the case-study form says" or "according to the document."
 
-If the source form describes multiple places, organize the narrative as a journey through those places. If the source form describes one main place, organize the narrative as a progressive exploration of that place, from context to music, heritage, experience, and technology.
-
-Do not use bullet points, numbered lists, tables, headings, metadata labels, JSON, Markdown, citations, or academic references. Do not mention that you are following a prompt. Do not include phrases such as "the case-study form says" or "according to the document."
-
-Write in an informative, neutral, cultural-heritage style. Avoid promotional language, emotional exaggeration, and fictional storytelling.
-
-Output only the final narrative.
-
-CASE-STUDY FORM:
-{case_study_text}
+Return only this JSON object, with the complete narrative divided into paragraphs:
+{"paragraphs":[{"text":"..."}]}
 """
 
 
-CULTURAL_HERITAGE_SHORT_PROMPT_TEMPLATE = """Transform the case-study form into a concise plain-text cultural-heritage narrative.
-
-Use only the source information. Do not invent or infer missing facts.
-
-Write 250-350 words in 3-5 short, complete paragraphs. Each paragraph should express one clear narrative event or idea.
-
-Include only the essential context, places, music or heritage elements, and digital or public-experience details when present.
-
-Do not use headings, bullet points, lists, tables, Markdown, citations, metadata labels, or explanations.
-
-Output only the final narrative.
-
-CASE-STUDY FORM:
-{case_study_text}
-"""
-
-
-CULTURAL_HERITAGE_DETAILED_PROMPT_TEMPLATE = """You are a careful cultural heritage narrative editor.
-
-Transform the case-study form into a detailed plain-text narrative that can later be processed into narrative events.
-
-Use only information contained in the source form. Do not invent names, dates, places, people, objects, coordinates, institutions, technologies, musical practices, events, causal explanations, relationships, meanings, or interpretations that are not present in the source. If information is missing, uncertain, unclear, or only implied, omit it rather than guessing.
-
-Write a coherent narrative of about 650-800 words. Divide the narrative into 7-10 short paragraphs. Treat each paragraph as one narrative event or one coherent narrative unit. Each paragraph must be syntactically complete, contain complete sentences, and end with proper punctuation. Do not split sentences between paragraphs.
-
-Preserve the factual meaning of the source as closely as possible. Rephrase only when needed to create a readable narrative. Keep important names, places, dates, institutions, project names, musical genres, instruments, repertoires, technologies, heritage objects, accessibility information, and public objectives when they are available.
-
-The narrative should cover, when present:
-the title or core concept of the itinerary;
-the geographical, territorial, or landscape context;
-the historical chronology or period;
-the main places, sites, buildings, monuments, landscapes, and routes;
-the movement, sequence, or relationship between places;
-the musical genres, musical practices, instruments, performers, repertoire, soundscapes, or acoustic elements;
-the cultural, historical, social, political, or religious significance of the music and places;
-the tangible and intangible heritage objects involved;
-the preservation, transformation, destruction, reuse, accessibility, or current condition of places;
-the digital, immersive, acoustic, XR, VR, AR, auralization, spatial-audio, reconstruction, app-based, or visitor-interface layer;
-the intended educational, promotional, public-engagement, inclusivity, accessibility, or social objectives;
-the collaborations, institutions, or project framework when relevant.
-
-If the source describes multiple places, organize the narrative as a detailed journey through those places. If the source describes one main place, organize the narrative as a detailed exploration moving from context to heritage, music, experience, technology, and public meaning.
-
-Do not use headings, bullet points, numbered lists, tables, metadata labels, JSON, Markdown, citations, academic references, or explanatory notes. Do not mention that you are following a prompt. Do not include phrases such as "the case-study form says" or "according to the document."
-
-Write in a neutral, informative cultural-heritage style. Avoid promotional language, emotional exaggeration, fictional storytelling, and unsupported interpretation.
-
-Output only the final narrative.
-
-CASE-STUDY FORM:
-{case_study_text}
-"""
-
-
-CSV_VALUE_CHAIN_PROMPT_TEMPLATE = """You are a careful narrative editor for mountain value-chain case studies.
-
-Your task is to transform the CSV value-chain record provided by the user into a short plain-text narrative.
-
-Use only the information contained in the CSV record. Do not invent names, dates, places, institutions, products, actors, challenges, innovations, landscape features, numeric values, percentages, statistics, or interpretations that are not present in the source record. If information is missing, omit it rather than guessing.
-
-The CSV record may contain numeric values, percentages, indicators, counts, areas, population values, economic values, environmental values, or other quantitative information. When numeric data are present in the selected numeric columns, you must preserve the original values and include them in the narrative. Do not round, approximate, normalize, convert, or recalculate numeric values unless an aggregated value is already provided in the CSV record.
-
-If several selected numeric columns describe the same territory, value chain, landscape, socioeconomic context, land-use system, protected area, or environmental condition, aggregate them narratively. This means that you should combine the relevant quantitative indicators into one or more readable sentences that explain the context of the value chain. Preserve every numeric value or percentage that you use in the aggregation.
-
-For example, if the source record contains population, area, elevation, protected-area share, employment, agricultural surface, or other socioeconomic or territorial indicators, describe them together as contextual evidence. Do not list numbers mechanically. Explain how the selected indicators characterize the territory or value chain, while remaining strictly faithful to the record.
-
-Write a coherent narrative of about 300-500 words. The narrative must be divided into short paragraphs. Each paragraph must express one clear narrative unit, such as the territorial context, the value chain, the local assets, the challenges, the innovation, the relevance for the MOVING project, the mountain landscape, or the quantitative socioeconomic and territorial context.
-
-For this task, treat a paragraph as equivalent to a narrative event. Each paragraph must be syntactically complete and must contain complete sentences. Do not split sentences between paragraphs. Do not end a paragraph with an incomplete sentence.
-
-The narrative should normally include, when available in the source record:
-the value-chain descriptor;
-the member state, region, district, or mountain landscape;
-the product, service, activity, or value chain described;
-the land-use system;
-the local assets;
-the key challenges;
-the type of value chain;
-the type of innovation;
-the brief description of the innovation;
-the reasons why the value chain is relevant;
-the synthetic description of the value chain;
-the protected areas or mountain reference landscape, if available;
-important socioeconomic, territorial, demographic, economic, agricultural, environmental, or land-use indicators, if available;
-any numeric values or percentages from selected numeric columns that are relevant to the narrative.
-
-When using quantitative information:
-preserve the exact numeric values and percentages as written in the source record;
-keep the original units when they are provided;
-do not invent units;
-do not infer trends unless the source record explicitly supports them;
-do not compare values unless the comparison is directly supported by the record;
-do not calculate new totals, averages, rates, percentages, or rankings unless they are already present in the source record;
-do not omit numeric values that are important for understanding the selected indicators.
-
-Do not use bullet points, numbered lists, tables, headings, metadata labels, JSON, Markdown, citations, or academic references. Do not mention that you are following a prompt. Do not include phrases such as "the CSV record says" or "according to the dataset."
-
-Write in an informative, neutral, research-oriented style. Avoid promotional language, emotional exaggeration, and fictional storytelling.
-
-Output only the final narrative.
-
-CSV VALUE-CHAIN RECORD:
-{source_text}
-"""
-
-
-CSV_SHORT_PROMPT_TEMPLATE = """Transform the CSV value-chain record into a concise plain-text narrative.
-
-Use only the source information. Do not invent or infer missing facts. Preserve exact numeric values and units when used.
-
-Write 200-300 words in 3-4 short, complete paragraphs.
-
-Focus only on the essential territory, value chain, assets, challenges, innovation, relevance, and key indicators.
-
-Do not use headings, bullet points, lists, tables, Markdown, citations, metadata labels, or explanations.
-
-Output only the final narrative.
-
-CSV VALUE-CHAIN RECORD:
-{source_text}
-"""
-
-
-CSV_DETAILED_PROMPT_TEMPLATE = """You are a careful narrative editor for mountain value-chain case studies.
-
-Transform the CSV value-chain record into a detailed plain-text narrative.
-
-Use only the information contained in the CSV record. Do not invent names, dates, places, institutions, products, actors, challenges, innovations, landscape features, protected areas, numeric values, percentages, statistics, causal explanations, comparisons, trends, or interpretations that are not present in the source record. If information is missing, uncertain, unclear, or only implied, omit it rather than guessing.
-
-Write a coherent narrative of about 500-700 words. Divide the narrative into 6-9 short paragraphs. Each paragraph must express one clear narrative unit, such as territorial context, socioeconomic context, environmental context, land-use system, value-chain description, local assets, challenges, innovation, project relevance, or mountain-landscape significance. Each paragraph must contain complete sentences and end with proper punctuation.
-
-Preserve the factual meaning of the source record as closely as possible. Keep important names, territories, administrative units, products, services, institutions, value-chain descriptors, innovation types, land-use systems, protected areas, indicators, numeric values, percentages, and units exactly as written when possible.
-
-The narrative should cover, when present:
-the value-chain descriptor;
-the member state, region, district, sub-region, NUTS level, LAU, or mountain reference landscape;
-the product, service, activity, or value chain described;
-the land-use system;
-the local assets;
-the key challenges;
-the type of value chain;
-the type of innovation;
-the brief description of the innovation;
-what the innovation is linked to;
-the reasons why the value chain is relevant;
-the synthetic description of the value chain;
-the protected areas, landscape features, or environmental context;
-the socioeconomic, territorial, demographic, economic, agricultural, environmental, or land-use indicators;
-any numeric values or percentages from selected numeric columns that are relevant to the narrative.
-
-When using quantitative information:
-preserve exact numeric values and percentages as written in the source record;
-preserve the original units when they are provided;
-do not invent units;
-do not round, approximate, normalize, convert, or recalculate values;
-do not calculate new totals, averages, rates, percentages, or rankings unless they are already provided in the source record;
-do not infer trends unless the source record explicitly supports them;
-do not compare values unless the comparison is directly supported by the record;
-combine related indicators into readable contextual sentences rather than listing them mechanically;
-do not omit numeric values that are important for understanding the selected indicators.
-
-Organize the narrative so that the reader first understands the territory and value chain, then the assets and challenges, then the innovation and relevance. If the record contains strong quantitative context, integrate it naturally into the relevant paragraphs.
-
-Do not use headings, bullet points, numbered lists, tables, metadata labels, JSON, Markdown, citations, academic references, or explanatory notes. Do not mention that you are following a prompt. Do not include phrases such as "the CSV record says" or "according to the dataset."
-
-Write in a neutral, informative, research-oriented style. Avoid promotional language, emotional exaggeration, fictional storytelling, and unsupported interpretation.
-
-Output only the final narrative.
-
-CSV VALUE-CHAIN RECORD:
-{source_text}
-"""
-
-
-DOCX_PROMPT_TEMPLATES = {
-    "standard": GENERAL_PROMPT_TEMPLATE,
-    "short": CULTURAL_HERITAGE_SHORT_PROMPT_TEMPLATE,
-    "detailed": CULTURAL_HERITAGE_DETAILED_PROMPT_TEMPLATE,
-}
-
-CSV_PROMPT_TEMPLATES = {
-    "standard": CSV_VALUE_CHAIN_PROMPT_TEMPLATE,
-    "short": CSV_SHORT_PROMPT_TEMPLATE,
-    "detailed": CSV_DETAILED_PROMPT_TEMPLATE,
-}
-
-DOCX_PROMPT_STRATEGIES = list(DOCX_PROMPT_TEMPLATES.keys())
-CSV_PROMPT_STRATEGIES = list(CSV_PROMPT_TEMPLATES.keys())
-
-
-def list_prompt_strategies(prompt_kind: str | None = None) -> list[str]:
-    if prompt_kind is None:
-        return sorted(set(DOCX_PROMPT_STRATEGIES + CSV_PROMPT_STRATEGIES))
-
-    kind = (prompt_kind or "").strip().lower()
-
-    if kind == "cultural-heritage":
-        return list(DOCX_PROMPT_STRATEGIES)
-
-    if kind == "value-chain":
-        return list(CSV_PROMPT_STRATEGIES)
-
-    raise ValueError(f"Unknown prompt kind: {prompt_kind}")
-
-
-def validate_prompt_strategy(prompt_kind: str, prompt_strategy: str) -> None:
-    kind = (prompt_kind or "").strip().lower()
-    strategy = (prompt_strategy or "standard").strip().lower()
-
-    if kind == "cultural-heritage":
-        if strategy not in DOCX_PROMPT_TEMPLATES:
-            raise ValueError(
-                f"Unknown prompt strategy: {prompt_strategy}. "
-                f"Available strategies for cultural-heritage: {', '.join(DOCX_PROMPT_STRATEGIES)}."
-            )
-        return
-
-    if kind == "value-chain":
-        if strategy not in CSV_PROMPT_TEMPLATES:
-            raise ValueError(
-                f"Unknown prompt strategy: {prompt_strategy}. "
-                f"Available strategies for value-chain: {', '.join(CSV_PROMPT_STRATEGIES)}."
-            )
-        return
-
-    raise ValueError(f"Unknown prompt kind: {prompt_kind}")
-
-
-def get_prompt_template(prompt_kind: str, prompt_strategy: str) -> str:
-    kind = (prompt_kind or "auto").strip().lower()
-    strategy = (prompt_strategy or "standard").strip().lower()
-
-    if kind == "auto":
-        raise ValueError("Prompt kind must be resolved before selecting a template.")
-
-    validate_prompt_strategy(kind, strategy)
-
-    if kind == "cultural-heritage":
-        return DOCX_PROMPT_TEMPLATES[strategy]
-
-    return CSV_PROMPT_TEMPLATES[strategy]
-
-
-prompt_template_for = get_prompt_template
+def get_prompt(name: str) -> str:
+    """Return a named prompt constant from this module."""
+
+    value = globals().get(name)
+    if not isinstance(value, str) or not value.strip():
+        available = ", ".join(
+            key for key, prompt in globals().items() if key.isupper() and isinstance(prompt, str)
+        )
+        raise ValueError(f"Unknown prompt '{name}'. Available prompts: {available}")
+    return value
