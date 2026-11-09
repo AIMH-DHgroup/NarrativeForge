@@ -20,3 +20,6 @@ eventweaver = "eventweaver.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["eventweaver*"]
+
+[tool.setuptools.package-data]
+"eventweaver.evaluation" = ["rubrics/*.json", "defaults.json"]

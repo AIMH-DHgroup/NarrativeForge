@@ -6,6 +6,29 @@ There is no textual-evidence extraction phase. The system does not build collect
 
 ## Getting Started
 
+### Independent Evaluation
+
+Existing Markdown narratives can be assessed without running generation or
+reorganization:
+
+```bash
+python -m eventweaver evaluate "./results/story.md" \
+  --sources "./documents" \
+  --metrics hanna,factscore,ragas_faithfulness,alignscore,source_coverage \
+  --output-dir "./evaluation_results/experiment_01"
+```
+
+**First increment:** HANNA human ratings, human-reviewed corpus-relative atomic
+precision (an explicit FActScore adaptation), and frozen-inventory human Source
+Coverage are operational with supplied annotations. RAGAS and AlignScore are
+explicitly `unsupported`, with null scores, pending validated reference adapters.
+No automatic or combined quality score is generated. Without human annotations,
+the command writes availability/provenance reports, not artificial scores.
+
+Each run requires a new output directory; incomplete, uncertain or unavailable
+evaluations produce a nonzero exit status after independent results are saved.
+See [evaluation methodology and annotation formats](docs/evaluation.md).
+
 Python 3.10 or later is required. From the project directory:
 
 ```bash

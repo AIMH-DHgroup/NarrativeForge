@@ -1,0 +1,10 @@
+{
+  "schema_version": "evaluation-config-v1",
+  "metrics": {
+    "hanna": {"rubric_version": "hanna-2022-table7-v1"},
+    "factscore": {"gamma": 10},
+    "ragas_faithfulness": {},
+    "alignscore": {},
+    "source_coverage": {}
+  }
+}

@@ -73,6 +73,8 @@ def build_parser():
                             help="Optional provider-specific value; omitted uses native defaults")
     reorganize.add_argument("--presence-penalty", type=float, default=None,
                             help="Optional provider-specific value; omitted uses native defaults")
+    from .evaluation.cli import add_parser
+    add_parser(sub)
     return parser
 
 
@@ -80,6 +82,13 @@ def main(argv=None):
     parser = build_parser()
     raw_args = list(argv) if argv is not None else sys.argv[1:]
     args = parser.parse_args(raw_args)
+    if args.command == "evaluate":
+        from .evaluation.cli import execute
+        try:
+            return execute(args)
+        except (OSError, ValueError, RuntimeError, ImportError) as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
     if args.command == "reorganize":
         try:
             provider = build_provider(

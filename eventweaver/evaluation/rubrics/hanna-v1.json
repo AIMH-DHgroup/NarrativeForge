@@ -1,0 +1,88 @@
+{
+  "version": "hanna-2022-table7-v1",
+  "name": "HANNA Table 7 human assessment rubric",
+  "provenance": {
+    "paper": "Of Human Criteria and Automatic Metrics: A Benchmark of the Evaluation of Story Generation",
+    "authors": ["Cyril Chhun", "Pierre Colombo", "Fabian M. Suchanek", "Chlo\u00e9 Clavel"],
+    "paper_url": "https://arxiv.org/html/2208.11646v4#A2.T7",
+    "arxiv_version": "2208.11646v4",
+    "table": 7,
+    "repository": "https://github.com/dig-team/hanna-benchmark-asg",
+    "revision": "bf4a171e01224390d0fecf96b829fd1baa5da1f4",
+    "repository_url": "https://github.com/dig-team/hanna-benchmark-asg/tree/bf4a171e01224390d0fecf96b829fd1baa5da1f4",
+    "anchor_transcription": "Verbatim Table 7 anchor text, without numeric labels; original punctuation retained."
+  },
+  "protocol": {
+    "raters_per_story": 3,
+    "distinct_raters": true,
+    "scale": {"minimum": 1, "maximum": 5, "type": "integer Likert"},
+    "aggregation": "Arithmetic mean separately for each dimension; no aggregate score.",
+    "calibration": "Workers were shown the human story alongside the subject story to calibrate their judgment.",
+    "screening": "Amazon Mechanical Turk Masters workers in the UK, US, Canada, Australia and New Zealand; judgments under 30 seconds rejected; first-mentioned fictional character name requested.",
+    "prompt_mismatch": "Note: if the story is not relevant with respect to the prompt, it only affects the Relevance criterion! Do not rate 1 everywhere, or we will reject!",
+    "unfinished_sentence": "Note: some stories have been abruptly cut in the middle of a sentence. Please rate them as if they ended just before the unfinished sentence.",
+    "scope": "HANNA-derived human assessment of supplied narratives, not the original dataset or an automated HANNA metric. Missing ratings remain null. Protocol compliance is not verified."
+  },
+  "dimensions": {
+    "coherence": {
+      "description": "measures whether the story makes sense",
+      "anchors": {
+        "1": "The story does not make sense at all. For instance, the setting and/or characters keep changing, and/or there is no understandable plot.",
+        "2": "Most of the story does not make sense.",
+        "3": "The story mostly makes sense but has some incoherences.",
+        "4": "The story almost makes sense overall, except for one or two small incoherences.",
+        "5": "The story makes sense from beginning to end."
+      }
+    },
+    "relevance": {
+      "description": "measures how well the story matches its prompt",
+      "anchors": {
+        "1": "The story has no relationship with the prompt at all.",
+        "2": "The story only has a weak relationship with the prompt.",
+        "3": "The story roughly matches the prompt.",
+        "4": "The story matches the prompt, except for one or two small aspects.",
+        "5": "The story matches the prompt exactly."
+      }
+    },
+    "empathy": {
+      "description": "measures how well you understood the characters\u2019 emotions (regardless of whether you agreed with them)",
+      "anchors": {
+        "1": "The characters seemed apathetic to you.",
+        "2": "At least one character slightly related to you on an emotional level.",
+        "3": "You recognized specific, but not necessarily strong, emotions (eg sadness, joy, fear\u2026) in at least one character.",
+        "4": "At least one character emotionally involved you, but minor details prevented you from completely relating to them.",
+        "5": "At least one character completely involved you on an emotional level."
+      }
+    },
+    "surprise": {
+      "description": "measures how surprising the end of the story was",
+      "anchors": {
+        "1": "The ending seemed completely obvious from the start, or doesn\u2019t make any sense at all.",
+        "2": "The ending was easily predictable after a few sentences.",
+        "3": "The ending was predictable after half of the story.",
+        "4": "The ending surprised you, but would have been difficult to predict.",
+        "5": "The ending surprised you, and still seemed as if it could very reasonably have been predicted, ie, there were enough clues in the story."
+      }
+    },
+    "engagement": {
+      "description": "measures how much you engaged with the story",
+      "anchors": {
+        "1": "You found the story boring and were glad it was over.",
+        "2": "You found one or two things interesting in the story, but no more.",
+        "3": "The story was mildly interesting.",
+        "4": "The story almost kept you engaged until the end.",
+        "5": "You were so engaged that you wished there was a sequel."
+      }
+    },
+    "complexity": {
+      "description": "measures how elaborate the story is",
+      "anchors": {
+        "1": "The setting of the story is extremely simple; it only involves one or two characters or concepts.",
+        "2": "The setting of the story is simple; one or two characters, a simple plot, maybe an indication of time or location.",
+        "3": "The story is somewhat developed: it involves at least one of the following: complex concepts, realistic characters, an intricate plot, an underlying history or circumstances, precise descriptions.",
+        "4": "The story is developed: it involves at least two of the following: complex concepts, realistic characters, an intricate plot, an underlying history or circumstances, precise descriptions.",
+        "5": "The story is well thought-out: it involves at least three of the following: complex concepts, realistic characters, an intricate plot, an underlying history or circumstances, precise descriptions."
+      }
+    }
+  }
+}
