@@ -20,8 +20,8 @@ class GenerateConfig:
     chunk_chars: int = 3000
     overlap_chars: int = 300
     retries: int = 2
-    frequency_penalty: float = 1.0
-    presence_penalty: float = 0.8
+    frequency_penalty: float | None = None
+    presence_penalty: float | None = None
     ocr_mode: str = "auto"
     ocr_language: str = "ita+eng"
     ocr_dpi: int = 200
@@ -37,8 +37,10 @@ class GenerateConfig:
             raise ValueError("Cache options must be booleans")
         if self.refresh_ocr and not self.cache_enabled:
             raise ValueError("--refresh-ocr and --no-cache cannot be used together")
-        validate_penalty(self.frequency_penalty, "--frequency-penalty")
-        validate_penalty(self.presence_penalty, "--presence-penalty")
+        if self.frequency_penalty is not None:
+            validate_penalty(self.frequency_penalty, "--frequency-penalty")
+        if self.presence_penalty is not None:
+            validate_penalty(self.presence_penalty, "--presence-penalty")
         if not 1 <= self.max_themes <= 5:
             raise ValueError("max_themes must be between 1 and 5")
         if isinstance(self.narrative_titles, str):

@@ -15,13 +15,18 @@ def build_provider(
     skip_ollama_preflight: bool = False,
     json_mode: bool = False,
     think: bool | None = None,
-    frequency_penalty: float = 1.0,
-    presence_penalty: float = 0.8,
+    frequency_penalty: float | None = None,
+    presence_penalty: float | None = None,
     hf_token_env: str = "HF_TOKEN",
     hf_provider: str = "auto",
     hf_timeout: int = 120,
 ):
     name = provider_name.strip().lower()
+    if frequency_penalty is not None or presence_penalty is not None:
+        raise ValueError(
+            f"Provider '{name}' does not expose frequency_penalty/presence_penalty; "
+            "these parameters cannot be forwarded safely"
+        )
     if name == "ollama":
         return OllamaProvider(
             model,

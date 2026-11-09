@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
-from .config import validate_penalty
 
 
 
@@ -79,15 +78,17 @@ def generate_ollama(
     timeout: int = 900,
     ollama_host: str | None = None,
     retries: int = 1,
-    frequency_penalty: float = 0.0,
-    presence_penalty: float = 0.0,
+    frequency_penalty: float | None = None,
+    presence_penalty: float | None = None,
 ) -> OllamaResult:
     import requests
 
     host = resolve_ollama_host(ollama_host)
-    options = {"temperature": temperature, "num_ctx": num_ctx,
-               "frequency_penalty": validate_penalty(frequency_penalty, "frequency_penalty"),
-               "presence_penalty": validate_penalty(presence_penalty, "presence_penalty")}
+    if frequency_penalty is not None or presence_penalty is not None:
+        raise ValueError(
+            "Ollama does not expose frequency_penalty/presence_penalty in this client"
+        )
+    options = {"temperature": temperature, "num_ctx": num_ctx}
     if max_new_tokens is not None:
         options["num_predict"] = max_new_tokens
     payload = {

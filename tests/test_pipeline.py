@@ -938,7 +938,7 @@ class ResumeTests(unittest.TestCase):
 class RepetitionControlTests(unittest.TestCase):
     def test_penalty_defaults_cli_and_invalid_values(self):
         default = GenerateConfig()
-        self.assertEqual((default.frequency_penalty, default.presence_penalty), (1.0, 0.8))
+        self.assertEqual((default.frequency_penalty, default.presence_penalty), (None, None))
         args = build_parser().parse_args(["generate", "docs", "--model", "test",
                                          "--frequency-penalty", "1.2", "--presence-penalty", "1.0"])
         self.assertEqual((args.frequency_penalty, args.presence_penalty), (1.2, 1.0))
@@ -948,48 +948,17 @@ class RepetitionControlTests(unittest.TestCase):
                     GenerateConfig(**{field: value})
         self.assertEqual(GenerateConfig(frequency_penalty=0, presence_penalty=2).presence_penalty, 2)
 
-    def test_shell_controls_reach_native_ollama_options_only_for_narrative_phases(self):
+    def test_explicit_ollama_penalties_are_rejected(self):
         from eventweaver.cli import main
-        requests_module = ModuleType("requests")
-        requests_module.post = MagicMock()
-        fake_model = FakeProvider()
-        calls = []
-        def post(url, *, json, timeout):
-            calls.append(json)
-            output = fake_model.generate(json["prompt"])
-            response = MagicMock()
-            response.status_code = 200
-            response.json.return_value = {"response": output.text, "done_reason": "stop"}
-            return response
-        requests_module.post.side_effect = post
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source = root / "doc.txt"
-            source.write_text("The museum documents its history and its collection.")
-            with patch.dict("sys.modules", {"requests": requests_module}), \
-                 redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                status = main(["generate", str(source), "--model", "test", "--skip-ollama-preflight",
-                               "--output-dir", str(root / "out"), "--max-words", "5",
-                               "--frequency-penalty", "1.2", "--presence-penalty", "1.0"])
-            self.assertEqual(status, 0)
-            self.assertTrue(any("FASE: WRITE" in row["prompt"] for row in calls))
-            self.assertTrue(any("FASE: CONDENSE" in row["prompt"] for row in calls))
-            for row in calls:
-                is_narrative = "FASE: WRITE" in row["prompt"] or "FASE: CONDENSE" in row["prompt"]
-                self.assertEqual(row["options"]["frequency_penalty"], 1.2 if is_narrative else 0.0)
-                self.assertEqual(row["options"]["presence_penalty"], 1.0 if is_narrative else 0.0)
-            run = next((root / "out").iterdir())
-            saved = json.loads((run / "manifest.json").read_text())["config"]
-            self.assertEqual((saved["frequency_penalty"], saved["presence_penalty"]), (1.2, 1.0))
+        with redirect_stderr(io.StringIO()):
+            status = main(["generate", "docs", "--model", "test", "--skip-ollama-preflight",
+                           "--frequency-penalty", "1.2"])
+        self.assertEqual(status, 1)
 
     def test_zero_penalties_override_provider_defaults(self):
         from eventweaver.providers.ollama import OllamaProvider
-        from eventweaver.ollama_client import OllamaResult
-        provider = OllamaProvider("test", preflight=False, frequency_penalty=1.4, presence_penalty=1.1)
-        with patch("eventweaver.providers.ollama.generate_ollama", return_value=OllamaResult("{}", 0)) as generate:
-            provider.generate("prompt", frequency_penalty=0.0, presence_penalty=0.0)
-        self.assertEqual(generate.call_args.kwargs["frequency_penalty"], 0.0)
-        self.assertEqual(generate.call_args.kwargs["presence_penalty"], 0.0)
+        with self.assertRaises(ValueError):
+            OllamaProvider("test", preflight=False, frequency_penalty=0.0)
 
     def test_prompts_require_diversity_and_preserve_factual_identifiers(self):
         from eventweaver import prompts
@@ -1031,7 +1000,7 @@ class RepetitionControlTests(unittest.TestCase):
             manifest["config"].pop("frequency_penalty")
             manifest["config"].pop("presence_penalty")
             manifest_path.write_text(json.dumps(manifest))
-            self.assertEqual(load_resume_config(source).frequency_penalty, 1.0)
+            self.assertIsNone(load_resume_config(source).frequency_penalty)
             with patch("eventweaver.cli.build_provider", return_value=FakeProvider()) as build, \
                  redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
                 status = main(["generate", "--resume-run", str(source), "--model", "test",

@@ -61,6 +61,20 @@ class OllamaClientTests(unittest.TestCase):
         self.assertFalse(payload["think"])
         self.assertEqual(payload["options"]["num_predict"], 512)
 
+    def test_generate_omits_penalties_by_default(self) -> None:
+        response = Mock(status_code=200)
+        response.json.return_value = {"response": "ok"}
+        response.raise_for_status.return_value = None
+        with patch("eventweaver.ollama_client.requests.post", return_value=response) as post:
+            generate_ollama("prompt", "qwen3:8b")
+        options = post.call_args.kwargs["json"]["options"]
+        self.assertNotIn("frequency_penalty", options)
+        self.assertNotIn("presence_penalty", options)
+
+    def test_generate_rejects_explicit_zero_for_unsupported_ollama_parameters(self) -> None:
+        with self.assertRaisesRegex(ValueError, "does not expose"):
+            generate_ollama("prompt", "qwen3:8b", frequency_penalty=0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,10 +32,10 @@ def build_parser():
     cmd.add_argument("--max-new-tokens", type=int, default=4096)
     cmd.add_argument("--chunk-chars", type=int, default=3000)
     cmd.add_argument("--overlap-chars", type=int, default=300)
-    cmd.add_argument("--frequency-penalty", type=float, default=1.0,
-                     help="Ollama penalty for token frequency in prose (0..2, default 1.0)")
-    cmd.add_argument("--presence-penalty", type=float, default=0.8,
-                     help="Ollama penalty for tokens already present in prose (0..2, default 0.8)")
+    cmd.add_argument("--frequency-penalty", type=float, default=None,
+                     help="Optional provider-specific value; omitted uses native defaults")
+    cmd.add_argument("--presence-penalty", type=float, default=None,
+                     help="Optional provider-specific value; omitted uses native defaults")
     cmd.add_argument("--json-retries", type=int, default=2)
     cmd.add_argument("--ocr", choices=["auto", "always", "never"], default="auto")
     cmd.add_argument("--ocr-language", default="ita+eng")
@@ -69,8 +69,10 @@ def build_parser():
     reorganize.add_argument("--ollama-timeout", type=int, default=900)
     reorganize.add_argument("--ollama-retries", type=int, default=1)
     reorganize.add_argument("--skip-ollama-preflight", action="store_true")
-    reorganize.add_argument("--frequency-penalty", type=float, default=1.0)
-    reorganize.add_argument("--presence-penalty", type=float, default=0.8)
+    reorganize.add_argument("--frequency-penalty", type=float, default=None,
+                            help="Optional provider-specific value; omitted uses native defaults")
+    reorganize.add_argument("--presence-penalty", type=float, default=None,
+                            help="Optional provider-specific value; omitted uses native defaults")
     return parser
 
 
@@ -108,8 +110,6 @@ def main(argv=None):
         parser.error("do not specify input documents with --resume-run")
     provided = {value.split("=", 1)[0] for value in raw_args if value.startswith("--")}
     try:
-        if args.provider != "ollama" and provided & {"--frequency-penalty", "--presence-penalty"}:
-            raise ValueError("--frequency-penalty and --presence-penalty are available with --provider ollama")
         if args.resume_run is None:
             config = GenerateConfig(max_themes=args.max_themes, language=args.language,
                                      narrative_titles=tuple(args.titles), max_narrative_words=args.max_words,

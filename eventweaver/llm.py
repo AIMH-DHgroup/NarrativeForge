@@ -85,8 +85,10 @@ class JsonLLM:
                 narrative_phase = task.splitlines()[0] in {
                     "FASE: WRITE", "PHASE: WRITE", "FASE: CONDENSE", "PHASE: CONDENSE"
                 }
-                parameters["frequency_penalty"] = self.config.frequency_penalty if narrative_phase else 0.0
-                parameters["presence_penalty"] = self.config.presence_penalty if narrative_phase else 0.0
+                if narrative_phase and self.config.frequency_penalty is not None:
+                    parameters["frequency_penalty"] = self.config.frequency_penalty
+                if narrative_phase and self.config.presence_penalty is not None:
+                    parameters["presence_penalty"] = self.config.presence_penalty
             response = self.provider.generate(prompt, **parameters)
             truncated = getattr(response, "truncated", False)
             provider_failed = bool(response.error and not truncated)

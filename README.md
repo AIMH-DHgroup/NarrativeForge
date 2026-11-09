@@ -88,6 +88,11 @@ The same mechanism is available for `reorganize` with `--prompt-name`; use
 The bundled `WRITE_PLACEMUS` prompt can be selected directly with
 `--write-prompt WRITE_PLACEMUS`.
 
+When `--frequency-penalty` and `--presence-penalty` are omitted, EventWeaver
+does not set them and uses the inference provider's native defaults. The
+current providers do not expose a verified API for these parameters, so
+explicit values are rejected rather than silently translated or ignored.
+
 Output directories must be outside input directories so later runs do not
 reread narratives as documents.
 
