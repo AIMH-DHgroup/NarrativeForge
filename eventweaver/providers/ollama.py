@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from ..ollama_client import generate_ollama, list_ollama_models, resolve_ollama_host
 from .base import GenerationResult
 from ..config import validate_penalty
@@ -53,3 +55,7 @@ class OllamaProvider:
             presence_penalty=self.presence_penalty if presence_penalty is None else presence_penalty,
         )
         return GenerationResult(text=result.text, runtime_seconds=result.runtime_seconds, error=result.error, truncated=result.truncated)
+
+    def validate_temperature(self, temperature: float) -> None:
+        if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not math.isfinite(temperature) or temperature < 0:
+            raise ValueError("Ollama temperature must be a finite number >= 0")

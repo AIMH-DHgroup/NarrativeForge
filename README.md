@@ -65,6 +65,7 @@ python -m eventweaver reorganize `
   "./results/story.md" `
   --provider huggingface-local `
   --model "HemmingwayAI/Hemmingway-1.5" `
+  --temperature 0.6 `
   --prompt-file "./eventweaver/reorganize_prompt.txt" `
   --output "./results/story_hemmingway.md"
 ```

@@ -64,6 +64,7 @@ def build_parser():
     reorganize.add_argument("--provider", choices=["ollama", "huggingface-api", "huggingface-local"], default="ollama")
     reorganize.add_argument("--num-ctx", type=int, default=32768)
     reorganize.add_argument("--max-new-tokens", type=int, default=12000)
+    reorganize.add_argument("--temperature", type=float, default=0.1)
     reorganize.add_argument("--ollama-host")
     reorganize.add_argument("--ollama-timeout", type=int, default=900)
     reorganize.add_argument("--ollama-retries", type=int, default=1)
@@ -90,10 +91,12 @@ def main(argv=None):
                 frequency_penalty=args.frequency_penalty,
                 presence_penalty=args.presence_penalty,
             )
+            provider.validate_temperature(args.temperature)
             prompt_path = args.prompt_file or Path(__file__).resolve().parent / "reorganize_prompt.txt"
             prompt_text = prompts.get_prompt(args.prompt_name) if args.prompt_name else None
             print(reorganize_markdown(
-                args.input, prompt_path, provider, args.output, args.max_new_tokens, prompt_text
+                args.input, prompt_path, provider, args.output, args.max_new_tokens, prompt_text,
+                args.temperature,
             ))
             return 0
         except (OSError, ValueError, RuntimeError, ImportError) as exc:

@@ -17,3 +17,6 @@ class LLMProvider(Protocol):
 
     def generate(self, prompt: str, *, temperature: float = 0.1, max_new_tokens: int = 2048) -> GenerationResult:
         ...
+
+    def validate_temperature(self, temperature: float) -> None:
+        ...

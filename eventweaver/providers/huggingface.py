@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import time
+import math
 
 from .base import GenerationResult
 
@@ -42,6 +43,10 @@ class HuggingFaceApiProvider:
             return GenerationResult(text=str(text).strip(), runtime_seconds=time.perf_counter() - started)
         except Exception as exc:
             return GenerationResult(text="", runtime_seconds=time.perf_counter() - started, error=str(exc))
+
+    def validate_temperature(self, temperature: float) -> None:
+        if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not math.isfinite(temperature) or temperature <= 0:
+            raise ValueError("Hugging Face API temperature must be a finite number > 0")
 
 
 class HuggingFaceLocalProvider:
@@ -93,3 +98,7 @@ class HuggingFaceLocalProvider:
             return GenerationResult(text=str(text).strip(), runtime_seconds=time.perf_counter() - started)
         except Exception as exc:
             return GenerationResult(text="", runtime_seconds=time.perf_counter() - started, error=str(exc))
+
+    def validate_temperature(self, temperature: float) -> None:
+        if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not math.isfinite(temperature) or temperature < 0:
+            raise ValueError("Local Hugging Face temperature must be a finite number >= 0")

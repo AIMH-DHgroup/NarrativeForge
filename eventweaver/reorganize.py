@@ -33,6 +33,7 @@ def reorganize_markdown(
     output_path: Path | None = None,
     max_new_tokens: int = 12000,
     prompt_text: str | None = None,
+    temperature: float = 0.1,
 ) -> Path:
     """Rewrite and regroup a Markdown story."""
 
@@ -42,7 +43,7 @@ def reorganize_markdown(
     numbered = "\n\n".join(f"[{index}] {paragraph}" for index, paragraph in enumerate(paragraphs, 1))
     response = provider.generate(
         prompt.replace("{document}", numbered),
-        temperature=0.1,
+        temperature=temperature,
         max_new_tokens=max_new_tokens,
     )
     if response.error:
