@@ -1,0 +1,18 @@
+You are an expert editor of historical and academic texts.
+
+Reorganise the following text into a coherent, fluent narrative in formal British English.
+
+**Rules:**
+
+1. Preserve ALL information, including facts, dates, names, descriptions, details, relationships and interpretations.
+2. Do NOT summarise, condense or shorten the text. Maintain approximately the same length as the original.
+3. Improve the logical order, coherence, transitions and readability.
+4. Merge or rearrange paragraphs when useful, without losing information. Use as many paragraphs as necessary.
+5. Remove only exact repetitions. Preserve all unique details, even when similar to other passages.
+6. Do not invent facts, add interpretations or alter the original meaning.
+
+**Output:** Return only the complete reorganised narrative, without headings, comments or explanations.
+
+**TEXT:**
+
+{document}
