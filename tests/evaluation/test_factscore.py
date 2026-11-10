@@ -49,3 +49,57 @@ def test_duplicate_claims_cannot_inflate_length_penalty(evaluation_case):
     ])
     with pytest.raises(ValueError, match="Duplicate atomic claim"):
         FactScoreEvaluator().evaluate(inputs, {"annotations": save("duplicates.json", annotations)})
+
+
+def automated_judge(monkeypatch, extraction, verdict):
+    from eventweaver.evaluation.metrics import factscore_automatic
+
+    class Judge:
+        def __init__(self, config):
+            self.calls = []
+
+        def ask(self, instruction, data):
+            self.calls.append({"instruction": instruction, "data": data})
+            return extraction if len(self.calls) == 1 else verdict(data)
+
+    monkeypatch.setattr(factscore_automatic, "JSONJudge", Judge)
+
+
+@pytest.mark.parametrize("verdict,score,status", [("supported", 1, "completed"), ("unsupported", 0, "completed"),
+                                                ("unverifiable", None, "uncertain")])
+def test_automatic_atomic_extraction_and_verification(evaluation_case, monkeypatch, verdict, score, status):
+    quote = evaluation_case[4]["quote"]
+    extraction = {"claims": [{"text": "The church was built in 1200.", "quote": quote}]}
+
+    def decision(data):
+        context = data["contexts"][0]
+        return {"verdict": verdict, "explanation": "Exact assertion or documented contradiction / ambiguity",
+                "evidence": [{"context_id": context["id"], "quote": context["text"]}]}
+
+    automated_judge(monkeypatch, extraction, decision)
+    result = FactScoreEvaluator().evaluate(evaluation_case[0], {"mode": "automatic", "model": "judge", "gamma": 0})
+    assert result["score"] == score
+    assert result["status"] == status
+    assert result["mode"] == "automatic"
+    assert result["claims"][0]["evidence"][0] == evaluation_case[3]
+    assert result["claims"][0]["id"].startswith("A-")
+
+
+def test_automatic_claim_deduplication_and_empty_sets(evaluation_case, monkeypatch):
+    item = {"text": "Built in 1200", "quote": evaluation_case[4]["quote"]}
+    automated_judge(monkeypatch, {"claims": [item, item]}, lambda data: {
+        "verdict": "unsupported", "explanation": "No support", "evidence": [],
+    })
+    result = FactScoreEvaluator().evaluate(evaluation_case[0], {"mode": "automatic", "model": "judge"})
+    assert result["denominator"] == 1
+    assert len(result["duplicates_removed"]) == 1
+    automated_judge(monkeypatch, {"claims": []}, lambda data: None)
+    assert FactScoreEvaluator().evaluate(evaluation_case[0], {"mode": "automatic", "model": "judge"})["score"] is None
+
+
+def test_automatic_claim_evidence_cannot_be_invented(evaluation_case, monkeypatch):
+    automated_judge(monkeypatch, {"claims": [{"text": "Built in 1200", "quote": "Not in the narrative"}]}, lambda data: None)
+    result = FactScoreEvaluator().evaluate(evaluation_case[0], {"mode": "automatic", "model": "judge"})
+    assert result["status"] == "failed"
+    assert result["score"] is None
+    assert "not present" in result["error"]

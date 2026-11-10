@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import IMPLEMENTATION_VERSION
-from .config import ALLOWED_KEYS, METRIC_IDS, load_config
+from .config import METRIC_IDS, load_config, validate_options
 from .evidence import parse_json
 from .metrics.alignscore import AlignScoreEvaluator
 from .metrics.factscore import FactScoreEvaluator
@@ -40,8 +40,7 @@ def run_evaluation(narrative_path, source_paths, output_dir, metrics, *, config=
         raise ValueError(f"Select distinct known metric IDs: {', '.join(METRIC_IDS)}")
     effective_config = load_config()
     for name, values in (config or {}).items():
-        if name not in ALLOWED_KEYS or not isinstance(values, dict) or set(values) - ALLOWED_KEYS[name]:
-            raise ValueError(f"Invalid configuration for {name}")
+        validate_options(name, values)
         effective_config[name].update(values)
     config = effective_config
     inputs = load_inputs(narrative_path, source_paths, narrative_id=narrative_id,
@@ -51,7 +50,7 @@ def run_evaluation(narrative_path, source_paths, output_dir, metrics, *, config=
     destination.mkdir(parents=True, exist_ok=False)
     timestamp = datetime.now(timezone.utc).isoformat()
     versions = {}
-    for package in ("eventweaver", "python-docx", "PyMuPDF", "ragas", "alignscore"):
+    for package in ("eventweaver", "python-docx", "PyMuPDF", "ragas", "alignscore", "openai", "instructor"):
         try:
             versions[package] = importlib.metadata.version(package)
         except importlib.metadata.PackageNotFoundError:
@@ -89,7 +88,7 @@ def run_evaluation(narrative_path, source_paths, output_dir, metrics, *, config=
             # Every evaluator gets a private snapshot; no metric results are supplied.
             metric_inputs = deepcopy(inputs)
             snapshots = {}
-            for field in ("annotations", "inventory"):
+            for field in ("annotations", "inventory", "agreement_annotations"):
                 path = metric_config.get(field)
                 if path is None:
                     continue

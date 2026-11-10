@@ -18,16 +18,18 @@ python -m eventweaver evaluate "./results/story.md" \
   --output-dir "./evaluation_results/experiment_01"
 ```
 
-**First increment:** HANNA human ratings, human-reviewed corpus-relative atomic
-precision (an explicit FActScore adaptation), and frozen-inventory human Source
-Coverage are operational with supplied annotations. RAGAS and AlignScore are
-explicitly `unsupported`, with null scores, pending validated reference adapters.
-No automatic or combined quality score is generated. Without human annotations,
-the command writes availability/provenance reports, not artificial scores.
+**Evaluation 0.2:** HANNA human ratings and two-rater ordinal agreement;
+human or automatic corpus-relative atomic precision (an explicit FActScore
+adaptation); reviewed frozen-inventory Source Coverage with human or automatic
+matching; an optional official RAGAS 0.4.3 adapter; and an isolated pinned
+AlignScore runtime. No combined quality score is generated. Model-backed
+integrations are unit-tested but await real-inference/domain validation; missing
+configuration, dependencies or assets produce explicit unavailable results.
 
 Each run requires a new output directory; incomplete, uncertain or unavailable
 evaluations produce a nonzero exit status after independent results are saved.
 See [evaluation methodology and annotation formats](docs/evaluation.md).
+See [runtime installation, automatic modes, and validation status](docs/evaluation-runtime.md).
 
 Python 3.10 or later is required. From the project directory:
 

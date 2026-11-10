@@ -13,4 +13,4 @@ class Evaluator(Protocol):
 
 
 def unavailable(reason: str) -> dict[str, Any]:
-    return {"status": "unsupported", "score": None, "warnings": [reason]}
+    return {"status": "unsupported", "score": None, "reason": reason, "warnings": [reason]}

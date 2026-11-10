@@ -1,3 +1,3 @@
 """Independent, source-bound evaluation of existing narratives."""
 
-IMPLEMENTATION_VERSION = "0.1.0"
+IMPLEMENTATION_VERSION = "0.2.0"

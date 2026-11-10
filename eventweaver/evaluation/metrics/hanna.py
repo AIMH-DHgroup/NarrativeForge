@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from ..base import unavailable
-from ..evidence import load_annotations
+from ..evidence import artifact, load_annotations
 from ..models import EvaluationInput
 
 
@@ -38,8 +38,13 @@ class HannaEvaluator:
             "rubric_version": rubric["version"],
             "warnings": warnings,
         }
+        if config.get("agreement_annotations"):
+            from .hanna_agreement import agreement_report
+            result["agreement"] = agreement_report(artifact(inputs, config["agreement_annotations"]), inputs, rubric)
         if not config.get("annotations"):
             result.update(unavailable("HANNA requires supplied human annotations."))
+            if "agreement" in result:
+                result["status"] = "partial"
             result["warnings"].extend(warnings)
             return result
 

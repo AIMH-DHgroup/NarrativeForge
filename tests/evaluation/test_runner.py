@@ -154,3 +154,10 @@ def test_cli_completes_a_reviewed_human_metric(evaluation_case, tmp_path):
     assert result["score"] == 1
     assert result["narrative_sha256"] == inputs.narrative["sha256"]
     assert result["input_artifacts"]["annotations"]["data"] == annotations
+
+
+def test_human_modes_do_not_silently_ignore_judge_settings(evaluation_case, tmp_path):
+    _, source, narrative, *_ = evaluation_case
+    with pytest.raises(ValueError, match="require mode"):
+        runner.run_evaluation(narrative, [source], tmp_path / "out", ["factscore"],
+                              config={"factscore": {"model": "accidentally-configured-judge"}})

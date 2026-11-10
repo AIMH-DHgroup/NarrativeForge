@@ -2,7 +2,7 @@
 
 ## Scope
 
-`eventweaver evaluate` evaluates an existing Markdown narrative against an explicit source corpus. This is a standalone, human-evaluation first increment, with evaluation implementation version `0.1.0`. It does not generate or reorganize a narrative, invoke a generation provider, extract atomic facts automatically, or run a RAGAS or AlignScore model.
+`eventweaver evaluate` evaluates an existing Markdown narrative against an explicit source corpus without generating or reorganizing it. Evaluation implementation version **0.2.0** preserves the human workflows described below and adds opt-in model-backed adapters and ordinal agreement. See [runtime extensions](evaluation-runtime.md) for current automatic-mode configuration, dependency isolation, assumptions, integration tests and scientific-validation limitations.
 
 The metrics answer different questions and remain separate:
 
@@ -11,8 +11,8 @@ The metrics answer different questions and remain separate:
 | `hanna` | How do humans judge the story's qualities? | Means of supplied human ratings, separately for six HANNA-derived dimensions |
 | `factscore` | What fraction of narrative atomic claims does this corpus support? | Human-reviewed claim inventory and documentary evidence, with an explicit length penalty |
 | `source_coverage` | How much independently identified relevant source information appears in the narrative? | Human matching against a reviewed, frozen source-only inventory |
-| `ragas_faithfulness` | Are the response's claims inferable from the context under the official RAGAS method? | Unavailable: adapter not implemented |
-| `alignscore` | What factual-consistency score does the reference alignment model produce? | Unavailable: adapter not implemented |
+| `ragas_faithfulness` | Are the response's claims inferable from documentary context? | Optional official RAGAS 0.4.3 adapter; independent statement/verdict trace |
+| `alignscore` | What factual-consistency score does the reference alignment model produce? | Isolated pinned Factiverse runtime with explicit original entailment component |
 
 There is no cross-metric aggregate, weighted quality index, or invented substitute for an unavailable metric. In particular, HANNA has no composite score. Precision and coverage are not interchangeable: a narrative can accurately state a small subset of the sources and still omit most relevant information.
 
@@ -39,7 +39,7 @@ From the project environment, use either the installed `eventweaver` command or 
 python -m eventweaver evaluate story.md --sources corpus --metrics hanna,factscore,source_coverage --config evaluation-config.json --original-prompt prompt.txt --narrative-id story-a --output-dir evaluations/review-001
 ```
 
-`--sources` accepts one or more supported files or directories, recursively. `--metrics` is a comma-separated list of distinct IDs, with no spaces between IDs. Omitting it selects all five metrics, including the two unavailable adapters, so the current default selection cannot return a fully completed run.
+`--sources` accepts one or more supported files or directories, recursively. `--metrics` is a comma-separated list of distinct IDs, with no spaces between IDs. Omitting it selects all five metrics; each must have its required configuration, annotations or runtime assets for a fully completed run.
 
 The configuration file is a JSON object keyed directly by metric ID, not the internal defaults file's `schema_version`/`metrics` wrapper:
 
@@ -64,7 +64,7 @@ The configuration file is a JSON object keyed directly by metric ID, not the int
 
 All relative paths, including annotation and inventory paths inside the configuration, resolve from the process's **current working directory**, not from the configuration file's directory. `--original-prompt` names a UTF-8 text file, not a literal prompt. `--narrative-id` is an optional label; otherwise the Markdown filename stem is used. Annotation binding uses content hashes, not that label.
 
-Unknown metric IDs, duplicate selections, unknown configuration fields, and non-object metric configurations are rejected. The only allowed configuration keys are those shown above. The rubric version and `gamma` default to the values shown. Neither unavailable adapter accepts runtime settings; there is no supported `max_context`, context-size, retrieval, truncation, checkpoint, or judge configuration in this increment.
+Unknown metric IDs, duplicate selections, unknown configuration fields, and non-object metric configurations are rejected. The example above describes human-mode configuration; [runtime extensions](evaluation-runtime.md) documents additional allowed settings. The rubric version and `gamma` default to the values shown. Human mode rejects judge settings instead of silently ignoring them.
 
 ### Statuses and Exit Codes
 
@@ -75,8 +75,8 @@ The result vocabulary is exactly `completed`, `partial`, `uncertain`, `unsupport
 | HANNA | `unsupported` without an annotations path; `completed` if every dimension has at least one non-null rating; otherwise `partial` | Per-dimension means/counts; top-level `score` always `null` |
 | FActScore adaptation | `unsupported` without an annotations path; `partial` unless `decomposition_reviewed` is exactly `true`; then `uncertain` if any claim is `unverifiable`, otherwise `completed` | `score` and `raw_precision` only for `completed`; reviewed decompositions have precision bounds |
 | Source coverage | `unsupported` without an inventory or matching annotations; `partial` if any unit has no decision; otherwise `uncertain` if any decision is uncertain, else `completed` | `score` is `null` while partial; with all decisions present it is conservative coverage, even when uncertain; bounds are reported |
-| RAGAS Faithfulness | Always `unsupported` | `score: null` |
-| AlignScore | Always `unsupported` | `score: null` |
+| RAGAS Faithfulness | `unsupported` without configured runtime; `completed` on valid official results; `uncertain` for no claims; explicit failures otherwise | Official verdict ratio or null |
+| AlignScore | `unsupported` without compatible environment/assets; `completed` on validated reference output; explicit failures otherwise | Entailment component or null |
 | Any evaluator | An exception, including invalid supplied annotations, becomes `failed` in the runner | `score: null`, with an `error` string |
 
 `completed` is an operational status, not certification of scientific protocol compliance. For example, one HANNA rater can supply all six dimensions and produce `completed`, with a warning about missing three-rater coverage.
@@ -203,7 +203,7 @@ This is a **HANNA-derived human adaptation**, not scores from the original HANNA
 
 Humans must decompose the narrative into a nonempty list of atomic claims and review completeness and atomicity. Every claim requires a unique nonempty `id`, nonempty `text`, valid `narrative_span`, a verdict, and a nonempty explanation. Verdicts are exactly `supported`, `unsupported`, or `unverifiable`. Supported claims require at least one valid documentary evidence span. Other verdicts may use an empty evidence list, but explanations must describe the contradiction, missing support/search, or uncertainty. Every supplied source span is validated regardless of verdict. A valid span does not itself establish entailment.
 
-The adaptation is relative to the supplied project corpus, unlike the reference automatic biography estimator and its retrieval/model pipeline. `unsupported` means contradicted or not supported by this corpus, not globally false. There is no automatic fact extractor, decomposition completeness checker, or verdict generator. Irrelevant claims are not silently removed from the denominator.
+The adaptation is relative to the supplied project corpus, unlike the reference automatic biography estimator and its retrieval/model pipeline. `unsupported` means contradicted or not supported by this corpus, not globally false. In human mode, extraction and judgments come from the reviewed ledger. The opt-in automatic extractor and verifier are documented in the runtime guide; neither mode can prove decomposition completeness. Irrelevant claims are not silently removed from the denominator.
 
 For `n` total claims and `s` supported claims:
 
@@ -216,7 +216,7 @@ score = raw_precision * length_penalty
 
 The default is `gamma = 10`, matching the pinned reference scorer's default. `gamma` must be finite and nonnegative; `gamma = 0` disables the penalty. At `n = gamma`, the penalty is 1. For example, one supported claim with `gamma = 10` has raw precision 1 but penalized score `exp(-9)`. An empty claim list is invalid: no-claim precision is undefined, not zero or perfect.
 
-`decomposition_reviewed` must be exactly `true` for a reviewed result. Otherwise status is `partial`, and `score`, `raw_precision`, and `precision_bounds` are null. With reviewed decomposition and `u` unverifiable claims, bounds are `[s/n, (s+u)/n]`; these are **raw precision bounds**, not penalty-adjusted scores. If `u > 0`, status is `uncertain`, both point estimates remain null, and unverifiable claims stay in the denominator. A completed result has no unverifiable claims and reports raw precision, penalty, and penalized score separately, alongside verdict counts and the full annotations.
+In human mode, `decomposition_reviewed` must be exactly `true` for a reviewed result. Otherwise status is `partial`, and `score`, `raw_precision`, and `precision_bounds` are null. With reviewed decomposition and `u` unverifiable claims, bounds are `[s/n, (s+u)/n]`; these are **raw precision bounds**, not penalty-adjusted scores. If `u > 0`, status is `uncertain`, both point estimates remain null, and unverifiable claims stay in the denominator. A completed result has no unverifiable claims and reports raw precision, penalty, and penalized score separately, alongside verdict counts and the full annotations. Automatic mode uses the same arithmetic on machine judgments but remains explicitly unreviewed.
 
 ### Source Inventory
 
@@ -325,7 +325,7 @@ The annotation must bind the frozen inventory's exact `sha256`. Each decision re
 
 Let `N` be all frozen units, `c` covered units, `q` uncertain units, and `m` units without decisions. Coverage bounds are `[c/N, (c+q+m)/N]`. Missing decisions produce `partial` and `score: null`. With every unit decided, the score is `c/N`; any uncertain decision produces `uncertain` but retains that conservative score and the bounds. Otherwise the result is `completed`. Counts, denominator, unreviewed count, full inventory, and decisions are retained. This is project-specific source coverage, not a standardized benchmark or an automatic semantic-matching metric.
 
-## Unavailable Automated Metrics
+## Reference Automated Metrics
 
 ### RAGAS Faithfulness
 
@@ -338,9 +338,9 @@ faithfulness = number of response claims supported by retrieved context
 
 That method independently decomposes the response into claims and checks whether each can be inferred from the supplied context. The documented collections API takes `user_input`, `response`, and `retrieved_contexts`, with an evaluator LLM. It is not equivalent to reusing the human FActScore verdict list merely because both involve a precision-like fraction.
 
-The local adapter is **not implemented**: it always reports `unsupported` and `score: null`, even if RAGAS happens to be installed. A pinned runtime and independently validated judge are absent. It does not import/run RAGAS, reuse FActScore claims, or produce a proxy score. The result's reference URL currently points to the official `stable` documentation; v0.4.3 is the explicit research/version reference here, not a claim that a v0.4.3 runtime executes.
+The optional adapter runs the official **0.4.3** collections implementation, independently of FActScore. It preserves statement/verdict traces and records requested versus effective provider settings. Missing prerequisites report `unsupported`; no proxy scores are computed. Real inference remains an opt-in integration test, not a claim of validated cultural-heritage accuracy.
 
-There is no implemented maximum-context setting or capacity check. The source snapshot is complete, with no silent selection or truncation; this does not mean an arbitrary corpus fits a future judge's context window. A future adapter would need to declare and validate its context policy and report unsupported capacity rather than silently dropping evidence. No such oversized-context execution path is claimed in this increment.
+The adapter uses every source context and applies an explicit full-input character budget, rejecting oversized cases without dropping evidence. This operational budget is not a model-tokenizer guarantee. Runtime configuration and limitations are documented in the extensions guide.
 
 ### AlignScore
 
@@ -350,7 +350,7 @@ At that fork revision, `nli_sp` retains all three NLI class scores and aggregate
 
 The runtime dependencies also conflict: the pinned fork requires `datasets>=2.3.2,<3`, whereas [RAGAS v0.4.3](https://github.com/vibrantlabsai/ragas/blob/v0.4.3/pyproject.toml) requires `datasets>=4.0.0`. These requirements cannot be satisfied in a single environment as declared. They are research findings, not dependencies installed by this evaluation increment.
 
-AlignScore therefore always reports `unsupported` and `score: null`. No checkpoint is downloaded, no model is instantiated, and no embedding/scalar substitute is computed. A future implementation needs an isolated, pinned runtime, verified checkpoint, and validated output contract. Neither an AlignScore runtime nor a cross-adapter dependency workaround exists here.
+AlignScore runs in a controlled isolated subprocess with preprovisioned checkpoint and local RoBERTa assets. It retains the fork's full three-class output and explicitly selects index 0 to match original entailment aggregation. Missing assets or incompatible environments report `unsupported`; no embedding substitute or automatic checkpoint download is used. This adapter awaits real checkpoint integration validation.
 
 ## Artifacts and Reproducibility
 
@@ -367,7 +367,7 @@ evaluations/review-001/
 
 Only requested metric result files are written. Selecting the unavailable metrics additionally produces their separate JSON files. Metadata and corpus snapshots are shared artifacts, not aggregate scores.
 
-`evaluation_metadata.json` records an experiment UUID, UTC timestamp, implementation version and SHA-256, Python version, recorded dependency versions, full narrative snapshot, corpus identity, effective configuration, original prompt, requested metric IDs, and `config_schema_version: "evaluation-config-v1"`. The recorded distributions are exactly `eventweaver`, `python-docx`, `PyMuPDF`, `ragas`, and `alignscore`; absent distributions have null versions. This is not a complete environment lockfile, and an installed package version does not mean its metric ran.
+`evaluation_metadata.json` records an experiment UUID, UTC timestamp, implementation version and SHA-256, Python version, recorded dependency versions, full narrative snapshot, corpus identity, effective configuration, original prompt, requested metric IDs, and `config_schema_version: "evaluation-config-v1"`. Versions include `eventweaver`, `python-docx`, `PyMuPDF`, `ragas`, `alignscore`, `openai` and `instructor`; absent distributions have null versions. Isolated AlignScore worker versions are recorded separately. This is not a complete environment lockfile, and an installed package version does not mean its metric ran.
 
 The implementation hash covers sorted `.py` and `.json` files under `eventweaver/evaluation`, combining each relative path, a null separator, and raw contents. It does not cover the entire repository or shared ingestion implementation. Each selected metric records `input_artifacts` with paths, raw-byte hashes and decoded annotation/inventory snapshots. Each artifact is read once for both hashing and evaluation, so concurrent edits cannot change the consumed snapshot. Missing or malformed artifacts fail only their metric. Unselected metrics' artifacts are not opened. Effective configuration is embedded rather than represented by a raw config-file hash.
 

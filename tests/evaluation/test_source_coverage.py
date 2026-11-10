@@ -53,3 +53,91 @@ def test_inventory_requires_textual_review_provenance(evaluation_case, field, va
     draft[field] = value
     with pytest.raises(ValueError, match="text fields"):
         freeze_inventory(draft, inputs.corpus)
+
+
+def test_v2_inventory_requires_relevance_and_detects_source_changes(evaluation_case):
+    inputs, _, _, evidence, *_ = evaluation_case
+    draft = {"version": "source-inventory-v2", "relevance_criteria": "History", "reviewed_by": "r", "reviewed_at": "now",
+             "units": [{"text": "Date", "evidence": [evidence]}]}
+    with pytest.raises(ValueError, match="reviewed relevance"):
+        freeze_inventory(draft, inputs.corpus)
+    draft["units"][0]["relevance"] = "relevant"
+    inventory = freeze_inventory(draft, inputs.corpus)
+    assert inventory["units"][0]["relevance"] == "relevant"
+    other_corpus = dict(inputs.corpus, sha256="modified")
+    with pytest.raises(ValueError, match="another source"):
+        validate_inventory(inventory, other_corpus)
+    draft["units"].append(dict(draft["units"][0]))
+    with pytest.raises(ValueError, match="Duplicate"):
+        freeze_inventory(draft, inputs.corpus)
+
+
+def test_source_only_inventory_proposals_never_receive_narrative(evaluation_case, monkeypatch):
+    from eventweaver.evaluation.metrics import source_coverage_automatic as module
+
+    class Judge:
+        def __init__(self, config):
+            self.calls = []
+
+        def ask(self, instruction, data):
+            assert "narrative" not in data
+            self.calls.append(data)
+            return {"units": [{"text": "Date is 1200", "quote": data["source_passage"]["text"]}]}
+
+    monkeypatch.setattr(module, "JSONJudge", Judge)
+    draft = module.prepare_inventory(evaluation_case[0].corpus, "Construction history", {"model": "judge"})
+    assert draft["frozen"] is False
+    assert draft["units"][0]["relevance"] == "uncertain"
+    assert draft["units"][0]["evidence"][0] == evaluation_case[3]
+    with pytest.raises(ValueError):
+        freeze_inventory(draft, evaluation_case[0].corpus)  # No human approval.
+
+
+@pytest.mark.parametrize("verdict,score,status", [("covered", 1, "completed"), ("not_covered", 0, "completed"),
+                                                ("uncertain", 0, "uncertain")])
+def test_automatic_coverage_matching_is_independent_and_traceable(evaluation_case, monkeypatch, verdict, score, status):
+    from eventweaver.evaluation.metrics import source_coverage_automatic as module
+
+    inputs, _, _, evidence, span, _, save = evaluation_case
+    inventory = freeze_inventory({"version": "source-inventory-v2", "relevance_criteria": "History", "reviewed_by": "r", "reviewed_at": "now",
+                                  "units": [{"text": "Date", "evidence": [evidence], "relevance": "relevant"}]}, inputs.corpus)
+
+    class Judge:
+        def __init__(self, config):
+            self.calls = []
+
+        def ask(self, instruction, data):
+            self.calls.append(data)
+            assert data["source_information_unit"]["id"] == inventory["units"][0]["id"]
+            return {"verdict": verdict, "explanation": "Complete meaning / absent / partial meaning",
+                    "narrative_evidence": [{"quote": span["quote"]}] if verdict == "covered" else []}
+
+    monkeypatch.setattr(module, "JSONJudge", Judge)
+    result = SourceCoverageEvaluator().evaluate(inputs, {"mode": "automatic", "model": "judge", "inventory": save("i.json", inventory)})
+    assert result["score"] == score
+    assert result["status"] == status
+    assert result["inventory"]["sha256"] == inventory["sha256"]
+    if verdict == "covered":
+        assert result["annotations"]["decisions"][0]["narrative_evidence"] == [span]
+
+
+def test_invalid_automatic_coverage_preserves_trace(evaluation_case, monkeypatch):
+    from eventweaver.evaluation.metrics import source_coverage_automatic as module
+
+    inputs, _, _, evidence, _, _, save = evaluation_case
+    inventory = freeze_inventory({"relevance_criteria": "History", "reviewed_by": "r", "reviewed_at": "now",
+                                  "units": [{"text": "Date", "evidence": [evidence]}]}, inputs.corpus)
+
+    class Judge:
+        def __init__(self, config):
+            self.calls = []
+
+        def ask(self, instruction, data):
+            self.calls.append(data)
+            return {"verdict": "covered", "explanation": "Claimed covered without any citation"}
+
+    monkeypatch.setattr(module, "JSONJudge", Judge)
+    result = SourceCoverageEvaluator().evaluate(inputs, {"inventory": save("i.json", inventory), "mode": "automatic", "model": "judge"})
+    assert result["status"] == "failed"
+    assert result["score"] is None
+    assert len(result["model_calls"]) == 1
