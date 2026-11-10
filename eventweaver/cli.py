@@ -26,6 +26,8 @@ def build_parser():
     cmd.add_argument("--max-themes", type=int, default=5)
     cmd.add_argument("--titles", nargs="+", default=[], help="Narrative titles in quotes, from 1 to 5")
     cmd.add_argument("--max-words", type=int, default=None, help="Maximum words per narrative, excluding the title")
+    cmd.add_argument("--reduction-mode", choices=("condense", "summarize"), default="condense",
+                     help="Word-limit reduction: original batched condense (default), or iterative whole-narrative summarize")
     cmd.add_argument("--language", default="English")
     cmd.add_argument("--write-prompt", default="WRITE", help="Named prompt constant from eventweaver/prompts.py")
     cmd.add_argument("--num-ctx", type=int, default=16384, help="Total context window also configured in the model/server")
@@ -123,6 +125,7 @@ def main(argv=None):
             config = GenerateConfig(max_themes=args.max_themes, language=args.language,
                                      narrative_titles=tuple(args.titles), max_narrative_words=args.max_words,
                                      write_prompt_name=args.write_prompt,
+                                     reduction_mode=args.reduction_mode,
                                     context_tokens=args.num_ctx, max_output_tokens=args.max_new_tokens,
                                     chunk_chars=args.chunk_chars, overlap_chars=args.overlap_chars,
                                     retries=args.json_retries, ocr_mode=args.ocr,
@@ -136,6 +139,7 @@ def main(argv=None):
                 raise ValueError("Resume uses saved text and does not read or OCR documents; remove: " + ", ".join(sorted(incompatible)))
             config = load_resume_config(args.resume_run)
             mapping = {"--max-words": ("max_narrative_words", args.max_words),
+                       "--reduction-mode": ("reduction_mode", args.reduction_mode),
                        "--num-ctx": ("context_tokens", args.num_ctx),
                        "--max-new-tokens": ("max_output_tokens", args.max_new_tokens),
                        "--json-retries": ("retries", args.json_retries),

@@ -127,18 +127,43 @@ Options are optional:
 
 - `--titles "Title one" "Title two"`: 1 to 5 distinct quoted titles. The number cannot exceed `--max-themes`. Titles retain their order without shortening or automatic translation; write them in English if English titles are desired.
 - `--max-words 800`: at most 800 words **per narrative**, excluding the title. It must be a positive integer. Without this option there is no overall narrative word limit.
+- `--reduction-mode condense|summarize`: method used after writing when a narrative exceeds `--max-words`; default `condense`. Without `--max-words`, neither method runs.
 
 All documents are still read and aggregated before narratives are defined. Supplied titles define the relevant content from the aggregated information and do not add automatic titles. A title with no relevant chunks produces the same error as a theme with no usable material. Without `--titles`, global themes are selected automatically.
 
 The limit is a maximum, not an exact length. Counting uses whitespace-separated sequences (`str.split()`), so a hyphenated word counts as one word. Markdown titles and formatting whitespace are not counted. The final count is recorded in `manifest.json` under `narratives`.
 
-Initial generation remains unchanged and considers all assigned chunks. After
-the complete draft has been generated, each narrative is counted using
-`len(text.split())`. A narrative already at or below `--max-words` is published
-without editing. Otherwise, the entire narrative is sent to the existing model
-using a dedicated `SUMMARIZE_NARRATIVE` prompt, requesting a fluent summary within
-the maximum while retaining relevant facts, names, dates, events, relationships,
-explanations, historical context, language and meaning.
+Initial generation remains unchanged and considers all assigned chunks. A
+narrative already at or below `--max-words` is published without editing in
+either mode. Both methods use the existing LLM backend and model configuration,
+and the selected mode is recorded in `manifest.json` under `config.reduction_mode`.
+
+**CONDENSE (default):** the original implementation, restored from the parent
+of commit `8133045`, processes long drafts in context-compatible batches with
+proportional word budgets and continuity context. It retains the original
+editorial passes and final word cap, preferring complete sentences where
+possible. Unusable editorial responses fall back to the available draft batch
+with `editorial_method: draft_word_cap`; successful model-based revisions use
+`editorial_method: model`. This last-resort trimming can remove information.
+Backend failures still produce explicit errors. Regression tests fingerprint
+the historical function bodies and prompt to guard against accidental redesign.
+
+```bash
+# Original behavior, implicitly selected
+eventweaver generate ./documents --model installed-model-name --max-words 3000
+
+# Explicit original behavior
+eventweaver generate ./documents --model installed-model-name --max-words 3000 --reduction-mode condense
+
+# Optional whole-narrative iterative summarization
+eventweaver generate ./documents --model installed-model-name --max-words 3000 --reduction-mode summarize
+```
+
+**SUMMARIZE (optional):** the complete narrative is counted using
+`len(text.split())` and sent to the model with the dedicated `SUMMARIZE_NARRATIVE`
+prompt, requesting a fluent summary within the maximum while retaining relevant
+facts, names, dates, events, relationships, explanations, historical context,
+language and meaning.
 
 The result is counted again. If it is still too long, the **entire latest
 summary**, not the original draft, is summarized again. The loop stops after at
@@ -150,7 +175,7 @@ errors, not successful summaries. The original draft and attempted responses
 remain in the run database/logs; only a within-limit result is saved as a final
 revision (`editorial_method: iterative_summarization`).
 
-The complete narrative plus summarization prompt must fit the configured
+In `summarize` mode, the complete narrative plus summarization prompt must fit the configured
 context/output budgets. If it does not, the command reports an error without
 splitting or silently cropping the narrative. Increase `--num-ctx` to fit the
 full input; an output-token-limit error may also require increasing
@@ -177,7 +202,7 @@ Penalties apply to `WRITE` and `CONDENSE`. Structured summarization, theme selec
 
 ## Resuming A Run
 
-If a run completed its draft but final summarization failed, the completed draft
+If a run completed its draft but final reduction failed, the completed draft
 can be reused. Legacy runs stopped in `FASE: CONDENSE` remain supported:
 
 ```bash
@@ -185,10 +210,14 @@ python -m eventweaver generate --resume-run "./results/run_alpcqzip" --model "mi
 ```
 
 The program creates a new `run_*` directory, copies the database with SQLite,
-and restarts iterative summarization from the full saved draft. The previous run
+and restarts the selected reduction method from the full saved draft. The previous run
 is read-only and is not modified. OCR, document reading, aggregation, theme
 selection, and draft generation are not repeated. The original input files are
 not required.
+
+Resume uses the mode saved in the manifest. If that field is absent, it defaults
+to `condense`. Pass `--reduction-mode summarize` or `--reduction-mode condense`
+with `--resume-run` to override the saved choice for the new run.
 
 Resume requires `manifest.json`, `themes.json`, and `analysis.sqlite`, with a draft for every theme and completed ingestion. It supports version 3.6 runs stopped with `FASE: CONDENSE`, including runs without the `draft_completed` checkpoint. A run stopped during initial writing cannot be resumed because its draft may be incomplete. Titles, language, and core parameters come from the manifest; supported reduction parameters can be overridden as documented by the CLI.
 
@@ -196,10 +225,12 @@ Resume requires `manifest.json`, `themes.json`, and `analysis.sqlite`, with a dr
 
 Initial writing accepts `paragraphs` as a list of objects, a list of strings, or a single string, as well as text fields such as `text`, `narrative`, `summary`, `content`, and `story`. Writing also accepts a root JSON list, a JSON string, or plain prose. Visibly incomplete JSON is not treated as prose, and structural checks for themes and assignments remain active.
 
-Final word-limit summarization requests plain narrative text. Ollama's JSON mode
+Only `--reduction-mode summarize` requests plain narrative text. Ollama's JSON mode
 is disabled only for those calls; initial structured requests retain their
 existing settings. Other providers use the same backend and model configuration.
-Unsuccessful summarization never falls back to `draft_word_cap`.
+Unsuccessful iterative summarization never falls back to `draft_word_cap`.
+The default CONDENSE mode retains its original structured-response handling and
+sentence-aware word-cap fallback.
 
 `responses.jsonl` and the SQLite `responses` table retain actual model responses, phase, attempt, parse errors, and truncation status. These records may contain document text and must be handled with the same confidentiality as the sources.
 
@@ -209,7 +240,7 @@ Unsuccessful summarization never falls back to `draft_word_cap`.
 2. **Full-corpus aggregation.** All documents, including required OCR, are read before the first model call. If the corpus fits, texts are presented together. Otherwise neutral summaries are prepared in batches and recursively integrated into one context. No themes are selected during this preparation.
 3. **Global theme extraction.** One selection phase receives the aggregated corpus and identifies 1 to 5 themes, considering connections and differences across documents. Manual `--titles` instead define the requested thematic focus. No per-document or per-chunk themes are generated.
 4. **Routing.** The model rereads original chunks and associates each with relevant themes. A chunk may belong to multiple themes or none.
-5. **Narrative.** For each theme, the model receives relevant original chunks in limited batches and writes narrative sections. Sections form a complete draft; `--max-words` then triggers whole-narrative iterative summarization only when needed.
+5. **Narrative.** For each theme, the model receives relevant original chunks in limited batches and writes narrative sections. Sections form a complete draft; `--max-words` then triggers the selected reduction method only when needed: original CONDENSE by default, or optional whole-narrative iterative SUMMARIZE.
 
 No later factual or semantic verification is performed. Technical checks for JSON, field formats, theme counts, assignments, and context budgets remain active.
 

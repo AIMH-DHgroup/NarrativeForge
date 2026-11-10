@@ -10,7 +10,7 @@ from pathlib import Path
 from .config import GenerateConfig
 from .ingestion.chunking import iter_chunks
 from .ingestion.loader import discover_documents, iter_documents
-from .llm import JsonLLM, LLMOutputTruncated, RETRY_FEEDBACK_BYTES, array, text, estimate_tokens
+from .llm import JsonLLM, InvalidLLMResponse, LLMOutputTruncated, RETRY_FEEDBACK_BYTES, array, text, estimate_tokens
 from . import prompts
 from .store import Store
 
@@ -282,6 +282,31 @@ def word_count(value):
     return len(value.split())
 
 
+def cap_paragraphs(paragraphs, maximum):
+    """Last-resort word cap after editorial rewriting; prefer complete sentences."""
+    result = []
+    remaining = maximum
+    for paragraph in paragraphs:
+        value = paragraph["text"]
+        words = list(re.finditer(r"\S+", value))
+        if len(words) <= remaining:
+            result.append({"text": value})
+            remaining -= len(words)
+        elif remaining:
+            prefix = value[:words[remaining - 1].end()]
+            if not re.search(r"[.!?][\"'’”)]*$", prefix):
+                endings = list(re.finditer(r"[.!?](?:[\"'’”)]+)?(?=\s|$)", prefix))
+                if endings:
+                    prefix = prefix[:endings[-1].end()]
+                else:
+                    prefix = prefix.rstrip(",;:-") + "."
+            result.append({"text": prefix})
+            break
+        else:
+            break
+    return result
+
+
 def narrative_history(value, byte_budget=1600):
     """Keep a bounded tail for continuity; never shorten the saved narrative itself."""
     value = re.sub(r"\s+", " ", value).strip()
@@ -300,7 +325,78 @@ def narrative_history(value, byte_budget=1600):
     return tail
 
 
+def editorial_items(store, theme_id, level, chunk_chars):
+    """Split long draft paragraphs at word boundaries, without omitting any words."""
+    for paragraph in store.narrative_paragraphs(theme_id, level):
+        value = paragraph["text"]
+        start = None
+        end = 0
+        for match in re.finditer(r"\S+", value):
+            if start is not None and match.end() - start > chunk_chars:
+                yield {"text": value[start:end]}
+                start = None
+            if start is None:
+                start = match.start()
+            end = match.end()
+        if start is not None:
+            yield {"text": value[start:end]}
+
+
+def condense_narratives(llm, store, selected, config):
+    maximum = config.max_narrative_words
+    if maximum is None:
+        return
+    for theme in selected:
+        level = -1
+        while True:
+            total = sum(word_count(row["text"]) for row in store.narrative_paragraphs(theme["id"], level))
+            if total <= maximum:
+                break
+            llm.progress(f"Reduction {theme['id']}: {total} words, maximum {maximum}")
+            # Every draft section enters editorial processing before the global cap is met.
+            history = ""
+            wrap = lambda rows: {"theme": theme, "language": config.language, "previous_text": history,
+                                 "max_words": maximum, "paragraphs": [{"text": row["text"]} for row in rows]}
+            position = 0
+            next_total = 0
+            for batch in llm.batches(prompts.CONDENSE, editorial_items(store, theme["id"], level, config.chunk_chars), wrap):
+                budget = max(1, maximum * sum(word_count(row["text"]) for row in batch) // total)
+                data = dict(wrap(batch), max_words=budget)
+                method = "model"
+                try:
+                    rewritten = llm.call(prompts.CONDENSE, data, parse_paragraphs, allow_narrative=True)
+                except InvalidLLMResponse as exc:
+                    llm.progress(f"{theme['id']}: unusable editorial reduction; applying the limit to the available draft ({exc})")
+                    rewritten = [{"text": row["text"]} for row in batch]
+                    method = "draft_word_cap"
+                if sum(word_count(row["text"]) for row in rewritten) > budget:
+                    llm.progress(f"{theme['id']}: applying the {budget}-word limit to the rewritten section")
+                for paragraph in cap_paragraphs(rewritten, budget):
+                    paragraph["editorial_method"] = method
+                    history = narrative_history(history + " " + paragraph["text"])
+                    position += 1
+                    next_total += word_count(paragraph["text"])
+                    store.db.execute("INSERT INTO revisions VALUES (?,?,?,?)",
+                                     (theme["id"], level + 1, position, json.dumps(paragraph, ensure_ascii=False)))
+                store.db.commit()
+            if next_total >= total:
+                raise ValueError("Narrative reduction did not converge: increase --num-ctx")
+            level += 1
+
+
 def limit_narratives(llm, store, selected, config):
+    """Select only the post-WRITE reduction step; generation is shared."""
+    if config.max_narrative_words is None:
+        return
+    llm.progress(f"Reduction mode: {config.reduction_mode.upper()}")
+    if config.reduction_mode == "condense":
+        llm.progress("Starting original condensation procedure...")
+        condense_narratives(llm, store, selected, config)
+    else:
+        summarize_narratives(llm, store, selected, config)
+
+
+def summarize_narratives(llm, store, selected, config):
     """Summarize each complete narrative until it fits, at most ten times."""
     maximum = config.max_narrative_words
     if maximum is None:

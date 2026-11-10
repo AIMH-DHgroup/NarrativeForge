@@ -29,8 +29,11 @@ class GenerateConfig:
     cache_dir: str = ".eventweaver_cache"
     refresh_ocr: bool = False
     write_prompt_name: str = "WRITE"
+    reduction_mode: str = "condense"
 
     def __post_init__(self):
+        if self.reduction_mode not in ("condense", "summarize"):
+            raise ValueError("reduction_mode must be 'condense' or 'summarize'")
         if not isinstance(self.cache_dir, str) or not self.cache_dir.strip():
             raise ValueError("--cache-dir must be a non-empty path")
         if type(self.cache_enabled) is not bool or type(self.refresh_ocr) is not bool:

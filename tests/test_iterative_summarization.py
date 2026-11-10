@@ -43,10 +43,11 @@ THEMES = [{"id": "T01", "title": "History"}]
 
 
 @pytest.mark.parametrize("maximum", [None, 4, 10])
-def test_within_limit_or_unlimited_is_completely_unchanged(store, maximum):
+@pytest.mark.parametrize("mode", ["condense", "summarize"])
+def test_within_limit_or_unlimited_is_completely_unchanged(store, maximum, mode):
     draft(store, "One fact.", "Second fact.")
     original = list(store.narrative_paragraphs("T01"))
-    config = GenerateConfig(max_narrative_words=maximum)
+    config = GenerateConfig(max_narrative_words=maximum, reduction_mode=mode)
     provider = ScriptedProvider()
     limit_narratives(JsonLLM(provider, config), store, THEMES, config)
     assert provider.calls == []
@@ -56,7 +57,7 @@ def test_within_limit_or_unlimited_is_completely_unchanged(store, maximum):
 
 def test_entire_narrative_including_last_paragraph_is_summarized(store):
     draft(store, "One two three.", "Four five six.")
-    config = GenerateConfig(max_narrative_words=3)
+    config = GenerateConfig(max_narrative_words=3, reduction_mode="summarize")
     provider = ScriptedProvider("Two retained facts.")
     events, logs = [], []
     llm = JsonLLM(provider, config, logs.append, audit=events.append)
@@ -75,7 +76,7 @@ def test_each_attempt_uses_previous_result_not_original(store):
     original = "One two three four five six seven eight."
     summaries = ["One two three four five six.", "One two three four.", "One two three."]
     draft(store, original)
-    config = GenerateConfig(max_narrative_words=3)
+    config = GenerateConfig(max_narrative_words=3, reduction_mode="summarize")
     provider = ScriptedProvider(*summaries)
     limit_narratives(JsonLLM(provider, config), store, THEMES, config)
     for call, previous in zip(provider.calls, [original] + summaries[:-1]):
@@ -86,7 +87,7 @@ def test_each_attempt_uses_previous_result_not_original(store):
 
 def test_nonreducing_summary_stops_after_ten_attempts_without_word_cap(store):
     draft(store, "Six original words remain completely unchanged.")
-    config = GenerateConfig(max_narrative_words=2)
+    config = GenerateConfig(max_narrative_words=2, reduction_mode="summarize")
     provider = ScriptedProvider(*["Still too many words."] * 10)
     with pytest.raises(ValueError, match="after 10 summarization attempts"):
         limit_narratives(JsonLLM(provider, config), store, THEMES, config)
@@ -102,7 +103,7 @@ def test_failed_or_incomplete_summary_never_replaces_previous_success(store, bad
     prior = {"text": "Previously saved complete summary."}
     store.db.execute("INSERT INTO revisions VALUES (?,?,?,?)", ("T01", 0, 1, json.dumps(prior)))
     store.db.commit()
-    config = GenerateConfig(max_narrative_words=2)
+    config = GenerateConfig(max_narrative_words=2, reduction_mode="summarize")
     provider = ScriptedProvider(bad)
     with pytest.raises(RuntimeError):
         limit_narratives(JsonLLM(provider, config), store, THEMES, config)
@@ -112,7 +113,7 @@ def test_failed_or_incomplete_summary_never_replaces_previous_success(store, bad
 
 def test_whole_narrative_that_cannot_fit_context_is_not_split_or_truncated(store):
     draft(store, "Important fact. " * 2000)
-    config = GenerateConfig(max_narrative_words=100)
+    config = GenerateConfig(max_narrative_words=100, reduction_mode="summarize")
     provider = ScriptedProvider()
     with pytest.raises(ValueError, match="Whole narrative.*context budget"):
         limit_narratives(JsonLLM(provider, config), store, THEMES, config)
@@ -124,7 +125,7 @@ def test_limits_are_applied_per_narrative_and_saved_in_existing_format(store, tm
     draft(store, "First story with several documented facts.")
     draft(store, "Second story with distinct documented facts.", theme_id="T02")
     themes = THEMES + [{"id": "T02", "title": "Second history"}]
-    config = GenerateConfig(max_narrative_words=3)
+    config = GenerateConfig(max_narrative_words=3, reduction_mode="summarize")
     provider = ScriptedProvider("First retained facts.", "Second retained facts.")
     limit_narratives(JsonLLM(provider, config), store, themes, config)
     publish(store, themes, tmp_path)
@@ -164,7 +165,7 @@ class PipelineProvider(ScriptedProvider):
 def test_generate_publishes_only_after_limit_is_met(tmp_path):
     source = tmp_path / "source.txt"
     source.write_text("The church was built in 1200 and restored in 1950.")
-    config = GenerateConfig(max_narrative_words=5, retries=0, cache_enabled=False)
+    config = GenerateConfig(max_narrative_words=5, retries=0, cache_enabled=False, reduction_mode="summarize")
     run = generate_narratives([source], output_dir=tmp_path / "out", provider=PipelineProvider("Built 1200; restored 1950."),
                               config=config, progress=lambda message: None)
     body = (run / "narrative_T01.md").read_text().split("\n", 1)[1]
@@ -178,7 +179,7 @@ def test_failed_loop_does_not_publish_overlimit_markdown(tmp_path):
     source = tmp_path / "source.txt"
     source.write_text("The church was built in 1200 and restored in 1950.")
     provider = PipelineProvider(*["The church was built in 1200 and restored in 1950."] * 10)
-    config = GenerateConfig(max_narrative_words=5, retries=0, cache_enabled=False)
+    config = GenerateConfig(max_narrative_words=5, retries=0, cache_enabled=False, reduction_mode="summarize")
     with pytest.raises(ValueError, match="after 10"):
         generate_narratives([source], output_dir=tmp_path / "out", provider=provider, config=config, progress=lambda message: None)
     run = next((tmp_path / "out").iterdir())
@@ -197,6 +198,6 @@ def test_resume_uses_same_loop_without_touching_successful_source_run(tmp_path):
                                    config=config, progress=lambda message: None)
     original_text = (original / "narrative_T01.md").read_bytes()
     result = resume_narratives(original, provider=ScriptedProvider("Built 1200; restored 1950."),
-                               config=replace(config, max_narrative_words=5), progress=lambda message: None)
+                               config=replace(config, max_narrative_words=5, reduction_mode="summarize"), progress=lambda message: None)
     assert word_count((result / "narrative_T01.md").read_text().split("\n", 1)[1]) == 4
     assert (original / "narrative_T01.md").read_bytes() == original_text
