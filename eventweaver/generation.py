@@ -10,7 +10,7 @@ from pathlib import Path
 from .config import GenerateConfig
 from .ingestion.chunking import iter_chunks
 from .ingestion.loader import discover_documents, iter_documents
-from .llm import JsonLLM, InvalidLLMResponse, LLMOutputTruncated, RETRY_FEEDBACK_BYTES, array, text, estimate_tokens
+from .llm import JsonLLM, LLMOutputTruncated, RETRY_FEEDBACK_BYTES, array, text, estimate_tokens
 from . import prompts
 from .store import Store
 
@@ -21,20 +21,23 @@ def save_json(path, value):
     staging.replace(path)
 
 
-def theme_metadata(value, *, field, limit, report, fallback=None):
-    # These are organizational labels only; original documents are never shortened here.
+def theme_metadata(value, *, field, report, limit=None, fallback=None):
+    # Only titles have a length limit; descriptions are preserved verbatim.
     if value is None and fallback is not None:
         report(f"{field}: description missing, using the theme title")
         value = fallback
     if not isinstance(value, str):
             raise ValueError(f"{field}: expected string, received {type(value).__name__}")
-    value = re.sub(r"\s+", " ", value).strip()
-    if not value:
+    if limit is not None:
+        value = re.sub(r"\s+", " ", value).strip()
+    if not value.strip():
         if fallback is None:
             raise ValueError(f"{field}: empty text")
         report(f"{field}: description missing, using the theme title")
         return fallback
-    if len(value) > limit:
+    if limit is None:
+        report(f"{field}: Theme description preserved: {len(value)} characters")
+    if limit is not None and len(value) > limit:
         report(f"{field}: metadata shortened from {len(value)} to at most {limit} characters")
         prefix = value[:limit - 1]
         boundary = prefix.rfind(" ")
@@ -52,7 +55,7 @@ def parse_themes(obj, maximum, *, allow_empty=False, report=lambda message: None
         title = theme_metadata(row.get("title"), field=f"themes[{index}].title",
                                limit=100, report=report)
         description = theme_metadata(row.get("description"), field=f"themes[{index}].description",
-                                     limit=300, fallback=title, report=report)
+                                     fallback=title, report=report)
         result.append({"title": title, "description": description})
     if not result and not allow_empty:
         raise ValueError("No themes returned")
@@ -212,7 +215,7 @@ def themes(llm, aggregate, config):
             if not isinstance(row, dict) or row.get("title") != title:
                 raise ValueError(f"themes[{index}].title must be identical to the requested title: {title}")
             description = theme_metadata(row.get("description"), field=f"themes[{index}].description",
-                                         limit=300, fallback=title[:300], report=llm.progress)
+                                         fallback=title, report=llm.progress)
             result.append({"title": title, "description": description})
         return result
     result = llm.call(task, dict(aggregate, requested_titles=list(config.narrative_titles)), validate)
@@ -279,31 +282,6 @@ def word_count(value):
     return len(value.split())
 
 
-def cap_paragraphs(paragraphs, maximum):
-    """Last-resort word cap after editorial rewriting; prefer complete sentences."""
-    result = []
-    remaining = maximum
-    for paragraph in paragraphs:
-        value = paragraph["text"]
-        words = list(re.finditer(r"\S+", value))
-        if len(words) <= remaining:
-            result.append({"text": value})
-            remaining -= len(words)
-        elif remaining:
-            prefix = value[:words[remaining - 1].end()]
-            if not re.search(r"[.!?][\"'’”)]*$", prefix):
-                endings = list(re.finditer(r"[.!?](?:[\"'’”)]+)?(?=\s|$)", prefix))
-                if endings:
-                    prefix = prefix[:endings[-1].end()]
-                else:
-                    prefix = prefix.rstrip(",;:-") + "."
-            result.append({"text": prefix})
-            break
-        else:
-            break
-    return result
-
-
 def narrative_history(value, byte_budget=1600):
     """Keep a bounded tail for continuity; never shorten the saved narrative itself."""
     value = re.sub(r"\s+", " ", value).strip()
@@ -322,63 +300,38 @@ def narrative_history(value, byte_budget=1600):
     return tail
 
 
-def editorial_items(store, theme_id, level, chunk_chars):
-    """Split long draft paragraphs at word boundaries, without omitting any words."""
-    for paragraph in store.narrative_paragraphs(theme_id, level):
-        value = paragraph["text"]
-        start = None
-        end = 0
-        for match in re.finditer(r"\S+", value):
-            if start is not None and match.end() - start > chunk_chars:
-                yield {"text": value[start:end]}
-                start = None
-            if start is None:
-                start = match.start()
-            end = match.end()
-        if start is not None:
-            yield {"text": value[start:end]}
-
-
 def limit_narratives(llm, store, selected, config):
+    """Summarize each complete narrative until it fits, at most ten times."""
     maximum = config.max_narrative_words
     if maximum is None:
         return
     for theme in selected:
-        level = -1
-        while True:
-            total = sum(word_count(row["text"]) for row in store.narrative_paragraphs(theme["id"], level))
+        narrative = "\n\n".join(row["text"] for row in store.narrative_paragraphs(theme["id"]))
+        total = word_count(narrative)
+        llm.progress(f"Narrative generated {theme['id']}: {total} words; maximum allowed: {maximum}")
+        if total <= maximum:
+            continue
+        for attempt in range(1, 11):
+            llm.progress(f"SUMMARIZE {theme['id']} attempt {attempt}: {total} words before summarization")
+            narrative = llm.summarize_narrative(narrative, maximum, attempt)
+            total = word_count(narrative)
+            llm.progress(f"SUMMARIZE {theme['id']} attempt {attempt}: {total} words after summarization")
             if total <= maximum:
                 break
-            llm.progress(f"Reduction {theme['id']}: {total} words, maximum {maximum}")
-            # Every draft section enters editorial processing before the global cap is met.
-            history = ""
-            wrap = lambda rows: {"theme": theme, "language": config.language, "previous_text": history,
-                                 "max_words": maximum, "paragraphs": [{"text": row["text"]} for row in rows]}
-            position = 0
-            next_total = 0
-            for batch in llm.batches(prompts.CONDENSE, editorial_items(store, theme["id"], level, config.chunk_chars), wrap):
-                budget = max(1, maximum * sum(word_count(row["text"]) for row in batch) // total)
-                data = dict(wrap(batch), max_words=budget)
-                method = "model"
-                try:
-                    rewritten = llm.call(prompts.CONDENSE, data, parse_paragraphs, allow_narrative=True)
-                except InvalidLLMResponse as exc:
-                    llm.progress(f"{theme['id']}: unusable editorial reduction; applying the limit to the available draft ({exc})")
-                    rewritten = [{"text": row["text"]} for row in batch]
-                    method = "draft_word_cap"
-                if sum(word_count(row["text"]) for row in rewritten) > budget:
-                    llm.progress(f"{theme['id']}: applying the {budget}-word limit to the rewritten section")
-                for paragraph in cap_paragraphs(rewritten, budget):
-                    paragraph["editorial_method"] = method
-                    history = narrative_history(history + " " + paragraph["text"])
-                    position += 1
-                    next_total += word_count(paragraph["text"])
-                    store.db.execute("INSERT INTO revisions VALUES (?,?,?,?)",
-                                     (theme["id"], level + 1, position, json.dumps(paragraph, ensure_ascii=False)))
-                store.db.commit()
-            if next_total >= total:
-                raise ValueError("Narrative reduction did not converge: increase --num-ctx")
-            level += 1
+        else:
+            raise ValueError(
+                f"Narrative {theme['id']} still has {total} words after 10 summarization attempts "
+                f"(maximum {maximum}). No over-limit narrative was published."
+            )
+        level = store.db.execute("SELECT max(level) FROM revisions WHERE theme_id=?", (theme["id"],)).fetchone()[0]
+        level = 0 if level is None else level + 1
+        paragraphs = [part.strip() for part in re.split(r"\n\s*\n", narrative) if part.strip()]
+        with store.db:
+            for position, paragraph in enumerate(paragraphs, 1):
+                body = {"text": paragraph, "editorial_method": "iterative_summarization"}
+                store.db.execute("INSERT INTO revisions VALUES (?,?,?,?)",
+                                 (theme["id"], level, position, json.dumps(body, ensure_ascii=False)))
+        llm.progress(f"Saving final narrative {theme['id']}: {total} words")
 
 
 def split_writing_batch(batch):

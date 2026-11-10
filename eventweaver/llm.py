@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from .config import GenerateConfig
+from .prompts import SUMMARIZE_NARRATIVE
 
 RETRY_FEEDBACK_BYTES = 768
 
@@ -43,6 +44,33 @@ class JsonLLM:
                           + detail + "\n")
             assert estimate_tokens(correction) <= RETRY_FEEDBACK_BYTES
         return RULES + task + correction + "\nDATA_JSON:\n" + json.dumps(data, ensure_ascii=False)
+
+    def summarize_narrative(self, narrative: str, maximum: int, attempt: int) -> str:
+        """Summarize the whole narrative once; never accept provider-reported truncation."""
+        prompt = SUMMARIZE_NARRATIVE.format(max_words=maximum, narrative_text=narrative)
+        if (estimate_tokens(prompt) + self.config.max_output_tokens + self.config.context_safety_tokens
+                > self.config.context_tokens):
+            raise ValueError(
+                "Whole narrative exceeds the summarization context budget; increase --num-ctx "
+                "or reduce --max-new-tokens to reserve input space. No text was truncated."
+            )
+        parameters = {"temperature": 0.0, "max_new_tokens": self.config.max_output_tokens}
+        if getattr(self.provider, "supports_text_mode", False):
+            parameters["json_mode"] = False
+        self.calls += 1
+        response = self.provider.generate(prompt, **parameters)
+        error = response.error
+        truncated = getattr(response, "truncated", False)
+        if truncated:
+            error = "Summary hit the output token limit; increase --max-new-tokens together with --num-ctx"
+        elif not error and not response.text.strip():
+            error = "The model returned an empty summary"
+        self.audit({"phase": "PHASE: SUMMARIZE_NARRATIVE", "call_number": self.calls,
+                    "attempt": attempt, "response_text": response.text, "error": error,
+                    "truncated": truncated})
+        if error:
+            raise RuntimeError("PHASE: SUMMARIZE_NARRATIVE: " + error)
+        return response.text.strip()
 
     def fits(self, task: str, data) -> bool:
         reserve = RETRY_FEEDBACK_BYTES if self.config.retries else 0

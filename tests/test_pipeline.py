@@ -14,7 +14,7 @@ from pathlib import Path
 
 from eventweaver.cli import build_parser
 from eventweaver.config import GenerateConfig
-from eventweaver.generation import generate_narratives, parse_themes, aggregate_corpus, themes, word_count, cap_paragraphs, compact_summary, parse_paragraphs, narrative_history
+from eventweaver.generation import generate_narratives, parse_themes, aggregate_corpus, themes, word_count, compact_summary, parse_paragraphs, narrative_history
 from eventweaver.ingestion.chunking import iter_chunks
 from eventweaver.ingestion.loader import discover_documents, iter_documents
 from eventweaver.ingestion.models import LoadedDocument, DocumentPage
@@ -269,14 +269,14 @@ class ReaderTests(unittest.TestCase):
 
 
 class ThemeValidationTests(unittest.TestCase):
-    def test_long_metadata_is_bounded_and_whitespace_normalized(self):
+    def test_description_is_preserved_and_title_whitespace_normalized(self):
         messages = []
         result = parse_themes({"themes": [{"title": "  Tema\n generale  ",
                                             "description": "Descrizione tematica molto lunga. " * 30}]},
                               5, report=messages.append)
         self.assertEqual(result[0]["title"], "Tema generale")
-        self.assertLessEqual(len(result[0]["description"]), 300)
-        self.assertTrue(messages)
+        self.assertEqual(result[0]["description"], "Descrizione tematica molto lunga. " * 30)
+        self.assertTrue(any("Theme description preserved:" in message for message in messages))
 
     def test_missing_null_or_empty_description_uses_title(self):
         for description in (None, "", "  "):
@@ -336,7 +336,8 @@ class ThemeValidationTests(unittest.TestCase):
             self.assertEqual(json.loads((run / "manifest.json").read_text())["status"], "completed")
             self.assertIn("The documents describe", (run / "narrative_T01.md").read_text())
             self.assertEqual(json.loads((run / "chunks.jsonl").read_text())["body"]["text"], original)
-            self.assertLessEqual(len(json.loads((run / "themes.json").read_text())[0]["description"]), 300)
+            self.assertEqual(json.loads((run / "themes.json").read_text())[0]["description"],
+                             "Descrizione molto lunga delle attività documentate. " * 20)
 
 
 class NarrativeLengthTests(unittest.TestCase):
@@ -617,11 +618,6 @@ class TitleAndLengthTests(unittest.TestCase):
                                       config=GenerateConfig(max_narrative_words=500, retries=0), progress=lambda message: None)
             self.assertFalse(any("FASE: CONDENSE" in p for p in provider.prompts))
             self.assertIn("The documents describe the museum and its activities.", (run / "narrative_T01.md").read_text())
-
-    def test_hard_word_cap_prefers_complete_sentences_and_accepts_one_word(self):
-        rows = [{"text": "First complete sentence. The following sentence is substantially longer than the first."}]
-        self.assertEqual(cap_paragraphs(rows, 6), [{"text": "First complete sentence."}])
-        self.assertEqual(cap_paragraphs(rows, 1), [{"text": "First."}])
 
     def test_all_parts_of_long_draft_enter_shortening_before_final_limit(self):
         class LongDraftProvider(FakeProvider):

@@ -8,6 +8,7 @@ from .base import GenerationResult
 
 class OllamaProvider:
     supports_penalties = True
+    supports_text_mode = True
 
     def __init__(
         self,
@@ -41,7 +42,8 @@ class OllamaProvider:
                 raise RuntimeError(f"Ollama model '{model}' is not installed locally. Install it with 'ollama pull {model}'.")
 
     def generate(self, prompt: str, *, temperature: float = 0.1, max_new_tokens: int = 2048,
-                 frequency_penalty: float | None = None, presence_penalty: float | None = None) -> GenerationResult:
+                  frequency_penalty: float | None = None, presence_penalty: float | None = None,
+                  json_mode: bool | None = None) -> GenerationResult:
         if frequency_penalty is not None or presence_penalty is not None:
             raise ValueError(
                 "Ollama does not expose frequency_penalty/presence_penalty in this provider"
@@ -52,7 +54,7 @@ class OllamaProvider:
             temperature=temperature,
             num_ctx=self.num_ctx,
             max_new_tokens=max_new_tokens,
-            json_mode=self.json_mode,
+            json_mode=self.json_mode if json_mode is None else json_mode,
             think=self.think,
             timeout=self.timeout,
             ollama_host=self.host,

@@ -132,7 +132,31 @@ All documents are still read and aggregated before narratives are defined. Suppl
 
 The limit is a maximum, not an exact length. Counting uses whitespace-separated sequences (`str.split()`), so a hyphenated word counts as one word. Markdown titles and formatting whitespace are not counted. The final count is recorded in `manifest.json` under `narratives`.
 
-The first draft considers all assigned chunks. If it exceeds the maximum, an editorial rewrite makes it more concise; long drafts are processed in context-compatible batches. If the model still exceeds the assigned budget, the code applies the limit while preferring complete sentences. Very small limits may therefore produce terse text. Drafts and revisions remain available in the run records.
+Initial generation remains unchanged and considers all assigned chunks. After
+the complete draft has been generated, each narrative is counted using
+`len(text.split())`. A narrative already at or below `--max-words` is published
+without editing. Otherwise, the entire narrative is sent to the existing model
+using a dedicated `SUMMARIZE_NARRATIVE` prompt, requesting a fluent summary within
+the maximum while retaining relevant facts, names, dates, events, relationships,
+explanations, historical context, language and meaning.
+
+The result is counted again. If it is still too long, the **entire latest
+summary**, not the original draft, is summarized again. The loop stops after at
+most **10 attempts**. Word counts before and after every attempt are logged.
+There is no mechanical word cap or fallback to a truncated draft. Failure to
+meet the limit raises an explicit error; over-limit narratives are not published.
+Empty responses, provider errors and provider-reported token truncation are
+errors, not successful summaries. The original draft and attempted responses
+remain in the run database/logs; only a within-limit result is saved as a final
+revision (`editorial_method: iterative_summarization`).
+
+The complete narrative plus summarization prompt must fit the configured
+context/output budgets. If it does not, the command reports an error without
+splitting or silently cropping the narrative. Increase `--num-ctx` to fit the
+full input; an output-token-limit error may also require increasing
+`--max-new-tokens`. The corpus-aggregation `SUMMARIZE` prompt and initial writing
+process are separate and unchanged. Preserving information is a model instruction,
+not an automatic factual verification guarantee.
 
 `--max-new-tokens` limits each model response in every phase; `--max-words` limits the body of the final narrative. They are not equivalent.
 
@@ -153,21 +177,29 @@ Penalties apply to `WRITE` and `CONDENSE`. Structured summarization, theme selec
 
 ## Resuming A Run
 
-If a run completed its draft and stopped in `FASE: CONDENSE`, the completed draft can be reused:
+If a run completed its draft but final summarization failed, the completed draft
+can be reused. Legacy runs stopped in `FASE: CONDENSE` remain supported:
 
 ```bash
 python -m eventweaver generate --resume-run "./results/run_alpcqzip" --model "mistral-small:24b" --max-words 3000
 ```
 
-The program creates a new `run_*` directory, copies the database with SQLite, and resumes final reduction. The previous run is read-only and is not modified. OCR, document reading, aggregation, theme selection, and draft generation are not repeated. The saved text and draft are reused, so the original input files are not required.
+The program creates a new `run_*` directory, copies the database with SQLite,
+and restarts iterative summarization from the full saved draft. The previous run
+is read-only and is not modified. OCR, document reading, aggregation, theme
+selection, and draft generation are not repeated. The original input files are
+not required.
 
 Resume requires `manifest.json`, `themes.json`, and `analysis.sqlite`, with a draft for every theme and completed ingestion. It supports version 3.6 runs stopped with `FASE: CONDENSE`, including runs without the `draft_completed` checkpoint. A run stopped during initial writing cannot be resumed because its draft may be incomplete. Titles, language, and core parameters come from the manifest; supported reduction parameters can be overridden as documented by the CLI.
 
 ## Narrative Response Formats
 
-Writing and reduction accept `paragraphs` as a list of objects, a list of strings, or a single string, as well as text fields such as `text`, `narrative`, `summary`, `content`, and `story`. Narrative phases also accept a root JSON list, a JSON string, or plain prose. An visibly incomplete JSON response is not treated as prose, and structural checks for themes and assignments remain active.
+Initial writing accepts `paragraphs` as a list of objects, a list of strings, or a single string, as well as text fields such as `text`, `narrative`, `summary`, `content`, and `story`. Writing also accepts a root JSON list, a JSON string, or plain prose. Visibly incomplete JSON is not treated as prose, and structural checks for themes and assignments remain active.
 
-If an editorial response remains unusable after the configured attempts, the available draft batch is used and capped at the word maximum, preferring complete sentences. The method is recorded in `revisions.jsonl` as `editorial_method: draft_word_cap`. LLM service errors, such as an unreachable server, are still reported.
+Final word-limit summarization requests plain narrative text. Ollama's JSON mode
+is disabled only for those calls; initial structured requests retain their
+existing settings. Other providers use the same backend and model configuration.
+Unsuccessful summarization never falls back to `draft_word_cap`.
 
 `responses.jsonl` and the SQLite `responses` table retain actual model responses, phase, attempt, parse errors, and truncation status. These records may contain document text and must be handled with the same confidentiality as the sources.
 
@@ -177,7 +209,7 @@ If an editorial response remains unusable after the configured attempts, the ava
 2. **Full-corpus aggregation.** All documents, including required OCR, are read before the first model call. If the corpus fits, texts are presented together. Otherwise neutral summaries are prepared in batches and recursively integrated into one context. No themes are selected during this preparation.
 3. **Global theme extraction.** One selection phase receives the aggregated corpus and identifies 1 to 5 themes, considering connections and differences across documents. Manual `--titles` instead define the requested thematic focus. No per-document or per-chunk themes are generated.
 4. **Routing.** The model rereads original chunks and associates each with relevant themes. A chunk may belong to multiple themes or none.
-5. **Narrative.** For each theme, the model receives relevant original chunks in limited batches and writes narrative sections. Sections form a draft; `--max-words` triggers editorial reduction when needed.
+5. **Narrative.** For each theme, the model receives relevant original chunks in limited batches and writes narrative sections. Sections form a complete draft; `--max-words` then triggers whole-narrative iterative summarization only when needed.
 
 No later factual or semantic verification is performed. Technical checks for JSON, field formats, theme counts, assignments, and context budgets remain active.
 
@@ -213,7 +245,14 @@ When Ollama reaches the output limit, the client retains the text and distinguis
 
 ## Thematic Descriptions And Validation
 
-Title and description limits are organizational metadata limits: 100 and 300 characters respectively. Missing descriptions fall back to the theme title. Empty titles, invalid field types, duplicate themes, and more than five themes remain errors. These rules do not shorten document text or narrative paragraphs.
+Automatically generated theme titles retain their 100-character limit. Theme
+descriptions have no character limit: valid descriptions are preserved in full,
+including whitespace, saved in `themes.json`, and reused unchanged for ROUTE and
+WRITE. This also applies when narrative titles are supplied manually. Missing,
+null or blank descriptions fall back to the complete theme title. Empty titles,
+invalid field types, duplicate themes, and more than five themes remain errors.
+Context and model token budgets remain in force; descriptions are not shortened
+to fit them. These rules do not change document text or narrative word limits.
 
 ## Formats And OCR
 
